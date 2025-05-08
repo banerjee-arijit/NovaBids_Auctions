@@ -13,7 +13,7 @@ export default function TutorialDemo() {
       <div className="md:w-64 border-b md:border-b-0 md:border-r p-4">
         <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
           <Book className="w-5 h-5" />
-          Docs Menu
+          Nova Guide
         </h2>
         <ScrollArea className="md:h-[85vh] md:pr-0 md:py-5">
           <div className="flex md:flex-col gap-2 overflow-auto">

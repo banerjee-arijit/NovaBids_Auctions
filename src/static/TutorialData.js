@@ -51,6 +51,61 @@ const topics = [
       { step: "Wait for the auction to end to see if you win." },
     ],
   },
+  {
+    id: "track-bids",
+    title: "How to Track Your Bids",
+    content:
+      "Easily monitor your ongoing and past bids with our tracking dashboard.",
+    process: [
+      { step: "Log in to your Novabid account." },
+      { step: "Navigate to the 'My Bids' section in the dashboard." },
+      {
+        step: "View a list of current and past auctions you've participated in.",
+      },
+      { step: "Check the bid status: leading, outbid, or won." },
+      { step: "Click on any auction to see bid history and item details." },
+      { step: "Filter bids by status or date for better visibility." },
+      { step: "Set alerts for changes in your bid status." },
+      { step: "Use mobile notifications for real-time updates." },
+      { step: "Stay active to quickly respond if outbid." },
+      { step: "Refresh regularly for the latest bid status." },
+    ],
+  },
+  {
+    id: "win-auction",
+    title: "How to Win an Auction",
+    content: "Tips and strategies to increase your chances of winning bids.",
+    process: [
+      { step: "Research the item before placing a bid." },
+      { step: "Start with a reasonable but competitive bid." },
+      { step: "Use auto-bid feature if available to stay ahead." },
+      { step: "Monitor the auction especially as it nears closing time." },
+      { step: "Avoid bidding wars early in the auction." },
+      { step: "Set a maximum budget and stick to it." },
+      { step: "Place your final bid close to the auction end time." },
+      { step: "Check for last-minute bidding extensions." },
+      { step: "Stay calm and confident while bidding." },
+      { step: "Review auction terms so you're well-prepared." },
+    ],
+  },
+  {
+    id: "claim-item",
+    title: "How to Claim Your Winning Item",
+    content:
+      "Understand the steps to claim, pay for, and receive your winning auction items.",
+    process: [
+      { step: "Log in to your Novabid account." },
+      { step: "Go to the 'Won Auctions' section." },
+      { step: "Select the item you've won." },
+      { step: "Review payment options and select your method." },
+      { step: "Confirm your shipping address or pickup details." },
+      { step: "Make the payment through the secure gateway." },
+      { step: "Receive confirmation of your purchase." },
+      { step: "Track shipping or pickup status via your dashboard." },
+      { step: "Contact support if any issue arises." },
+      { step: "Receive and enjoy your winning item!" },
+    ],
+  },
 ];
 
 export default topics;
