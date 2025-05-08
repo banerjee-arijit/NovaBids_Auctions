@@ -9,37 +9,37 @@ import NavListItem from "./NavListItem";
 const components = [
   {
     title: "How to Login",
-    href: "/docs/how-to-login",
+    to: "/docs",
     description:
       "Step-by-step guide to logging in securely to your Novabid account.",
   },
   {
     title: "How to Register",
-    href: "/docs/how-to-register",
+    to: "/docs",
     description:
       "Create your Novabid account and get started with bidding in minutes.",
   },
   {
     title: "How to Place a Bid",
-    href: "/docs/how-to-place-bid",
+    to: "/docs",
     description:
       "Learn how to participate in live auctions and place your first bid.",
   },
   {
     title: "How to Track Your Bids",
-    href: "/docs/track-bids",
+    to: "/docs",
     description:
       "Easily monitor your ongoing and past bids with our tracking dashboard.",
   },
   {
     title: "How to Win an Auction",
-    href: "/docs/how-to-win",
+    to: "/docs",
     description:
       "Tips and strategies to increase your chances of winning bids.",
   },
   {
     title: "How to Claim Your Winning Item",
-    href: "/docs/claim-item",
+    to: "/docs",
     description:
       "Understand the steps to claim, pay for, and receive your winning auction items.",
   },
@@ -55,7 +55,7 @@ export default function NavComponents() {
             <NavListItem
               key={component.title}
               title={component.title}
-              href={component.href}
+              to={component.to}
             >
               {component.description}
             </NavListItem>

@@ -14,6 +14,7 @@ export default function NavGettingStarted() {
       <NavigationMenuTrigger>Launch Novabid</NavigationMenuTrigger>
       <NavigationMenuContent>
         <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+          {/* Hero item */}
           <li className="row-span-3">
             <NavigationMenuLink asChild>
               <a
@@ -31,13 +32,22 @@ export default function NavGettingStarted() {
               </a>
             </NavigationMenuLink>
           </li>
-          <NavListItem href="/auth" title="Login or Signup">
+
+          {/* Internal Link */}
+          <NavListItem title="Login or Signup" to="/auth">
             Access your Novabid dashboard by securely logging in or registering.
           </NavListItem>
-          <NavListItem href="/intro-video" title="Watch Intro Video">
+
+          {/* External Video */}
+          <NavListItem
+            href="https://www.youtube.com/watch?v=AcYF18oGn6Y&ab_channel=CosdenSolutions"
+            title="Watch Intro Video"
+          >
             Get a quick overview of how Novabid works in under 2 minutes.
           </NavListItem>
-          <NavListItem href="/meet-team" title="Meet Our Team">
+
+          {/* Internal Link */}
+          <NavListItem title="Meet Our Team" to="/meet_team">
             Learn about the passionate team behind Novabid.
           </NavListItem>
         </ul>

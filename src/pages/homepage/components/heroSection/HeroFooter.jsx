@@ -1,4 +1,4 @@
-import React from "react";
+import { Button } from "@/components/ui/button";
 
 const HeroFooter = () => {
   return (
@@ -16,12 +16,8 @@ const HeroFooter = () => {
             customizable.
           </p>
           <div className="flex flex-wrap justify-center gap-4 mb-12">
-            <button className="rounded-lg px-6 py-3 font-medium bg-[#0ea5e9] text-white hover:bg-[#38bdf8] transition">
-              Get Started
-            </button>
-            <button className="rounded-lg border px-6 py-3 font-medium border-gray-300 bg-white text-gray-800 hover:bg-gray-100 transition">
-              Learn More
-            </button>
+            <Button>Lunch NovaBids</Button>
+            <Button variant="outline">Contact Us</Button>
           </div>
 
           {/* Contact Email */}

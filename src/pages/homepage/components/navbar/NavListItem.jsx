@@ -1,32 +1,20 @@
-"use client";
+import { Link } from "react-router-dom";
 
-import { NavigationMenuLink } from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils";
-import React from "react";
+export default function NavListItem({ title, children, to, href }) {
+  const Component = to ? Link : "a";
+  const props = to
+    ? { to }
+    : { href, target: "_blank", rel: "noopener noreferrer" };
 
-const NavListItem = React.forwardRef(
-  ({ className, title, children, ...props }, ref) => {
-    return (
-      <li>
-        <NavigationMenuLink asChild>
-          <a
-            ref={ref}
-            className={cn(
-              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-              className
-            )}
-            {...props}
-          >
-            <div className="text-sm font-medium leading-none">{title}</div>
-            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-              {children}
-            </p>
-          </a>
-        </NavigationMenuLink>
-      </li>
-    );
-  }
-);
-
-NavListItem.displayName = "NavListItem";
-export default NavListItem;
+  return (
+    <li>
+      <Component
+        {...props}
+        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <div className="text-sm font-medium leading-none">{title}</div>
+        <p className="text-sm text-muted-foreground">{children}</p>
+      </Component>
+    </li>
+  );
+}
