@@ -1,12 +1,39 @@
-# React + Vite
+# 🚀 NOVA Bid
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**NOVA Bid** is a sleek, futuristic online auction platform where innovation meets bidding. Built with modern frontend technologies, NOVA Bid focuses on immersive UI/UX, smooth animations, and responsiveness — tailored for both desktop and mobile experiences.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌐 Live Preview
 
-## Expanding the ESLint configuration
+> Coming soon...
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## ✨ Features
+
+- 🔐 **Authentication UI** – Smooth login/register panels with modern animations
+- 🎨 **Responsive Design** – Fully mobile-friendly layout
+- ⚡ **Framer Motion Animations** – Delightful transitions for better user experience
+- 🌈 **Gradient & Glassmorphism UI** – Trendy and elegant interface
+- 🧩 **Reusable Components** – Built with modular React component architecture
+
+---
+
+## 📸 Screenshots
+
+> Add some screenshots here once your UI is complete — you can use tools like Lightshot or your browser's screenshot utility.
+
+---
+
+## 🛠️ Tech Stack
+
+- **React.js**
+- **Tailwind CSS**
+- **Framer Motion**
+- **Lucide Icons**
+- (Optional backend in the future: Firebase / Supabase / Node.js)
+
+---
+
+## 📁 Folder Structure
