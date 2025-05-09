@@ -1,4 +1,4 @@
-import { Tabs } from "../../../../components/ui/tabs";
+import { Tabs } from "@/components/ui/LandingPageTabs/tabs";
 import HeroSectionFeatureData from "@/static/HeroSectionFeatureData";
 
 const HeroFeatureCard = () => {

@@ -1,24 +1,24 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
+import { useState } from "react";
 import Sidebar from "./Sidebar/Sidebar";
+import { Outlet } from "react-router-dom";
 
 const DashboardLayout = () => {
+  const [collapsed, setCollapsed] = useState(false);
+
+  const sidebarWidth = collapsed ? "5rem" : "16rem";
+
   return (
     <div style={{ display: "flex" }}>
-      {/* Fixed Sidebar */}
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+
       <div
         style={{
-          width: "250px",
-          height: "100vh",
-          position: "fixed",
-          top: 0,
-          left: 0,
+          marginLeft: sidebarWidth,
+          padding: "1rem",
+          transition: "margin-left 0.3s ease",
+          flex: 1,
         }}
       >
-        <Sidebar />
-      </div>
-
-      <div style={{ marginLeft: "250px", padding: "1rem", flex: 1 }}>
         <Outlet />
       </div>
     </div>

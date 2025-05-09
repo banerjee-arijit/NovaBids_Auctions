@@ -4,8 +4,8 @@ import MeetOurTeam from "@/pages/ourTeam/MeetOurTeam";
 import LoginForm from "@/pages/Auth/login/LoginForm";
 import TurorialDemo from "@/pages/Tutorial/TutorialDemo";
 import RegisterForm from "@/pages/Auth/register/RegisterForm";
-import Dashboard from "@/pages/dashboard/Dashboard";
 import DashboardLayout from "@/pages/dashboard/DashboardLayout";
+import DashboardHomePage from "@/pages/dashboard/DashboardHomePage/DashboardHomePage";
 
 const router = createBrowserRouter([
   { path: "/", element: <Homepage /> },
@@ -20,7 +20,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Dashboard />,
+        element: <DashboardHomePage />,
       },
     ],
   },
