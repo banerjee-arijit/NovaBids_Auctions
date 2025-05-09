@@ -2,8 +2,10 @@ import React from "react";
 import InputField from "../common/InputField";
 import { Lock, Mail, LogIn, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const LoginRightPanel = ({ isForgotPassword, setIsForgotPassword }) => {
+  const navigate = useNavigate();
   return (
     <div className="p-8 md:p-10">
       <div className="text-center mb-8">
@@ -52,7 +54,7 @@ const LoginRightPanel = ({ isForgotPassword, setIsForgotPassword }) => {
         )}
 
         <button
-          type="submit"
+          onClick={navigate("/dashboard")}
           className="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all duration-300"
         >
           {isForgotPassword ? (
