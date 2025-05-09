@@ -5,7 +5,7 @@ import LoginForm from "@/pages/Auth/login/LoginForm";
 import TurorialDemo from "@/pages/Tutorial/TutorialDemo";
 import RegisterForm from "@/pages/Auth/register/RegisterForm";
 import DashboardLayout from "@/pages/dashboard/DashboardLayout";
-import DashboardHomePage from "@/pages/dashboard/dashboardHomePage/DashboardHomePage";
+import DashboardHomePage from "@/pages/dashboard/dashboardIndexPage/DashboardHomePage";
 import LiveAuction from "@/pages/dashboard/liveAuction/LiveAuction";
 import Mybids from "@/pages/dashboard/mybids/Mybids";
 import UserProfile from "@/pages/dashboard/userProfile/UserProfile";
