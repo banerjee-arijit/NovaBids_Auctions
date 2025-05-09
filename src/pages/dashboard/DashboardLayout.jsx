@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar/Sidebar";
 import { Outlet } from "react-router-dom";
 
 const DashboardLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const sidebarWidth = collapsed ? "5rem" : "16rem";
 

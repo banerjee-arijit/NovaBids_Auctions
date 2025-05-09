@@ -3,11 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const TabSwitcher = () => {
   return (
     <Tabs defaultValue="all" className="mb-8">
-      <TabsList className="grid grid-cols-4 lg:w-[400px]">
+      <TabsList className="inline-flex md:w-[200px] gap-2">
         <TabsTrigger value="all">All</TabsTrigger>
         <TabsTrigger value="live">Live</TabsTrigger>
-        <TabsTrigger value="ending">Ending Soon</TabsTrigger>
-        <TabsTrigger value="new">New</TabsTrigger>
       </TabsList>
     </Tabs>
   );

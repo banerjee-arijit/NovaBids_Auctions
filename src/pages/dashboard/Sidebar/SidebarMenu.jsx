@@ -16,16 +16,14 @@ const SidebarMenu = ({ collapsed }) => {
 
   const menuItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
-    { icon: Search, label: "Browse Auctions", path: "/auctions" },
-    { icon: Clock, label: "Live Auctions", path: "/live-auctions" },
-    { icon: Heart, label: "Watchlist", path: "/watchlist" },
-    { icon: DollarSign, label: "My Bids", path: "/my-bids" },
+    { icon: Clock, label: "Live Auctions", path: "live-auctions" },
+    { icon: DollarSign, label: "My Bids", path: "my-bids" },
   ];
 
   const secondaryItems = [
-    { icon: User, label: "Profile", path: "/profile" },
-    { icon: Bell, label: "Notifications", path: "/notifications" },
-    { icon: Settings, label: "Settings", path: "/settings" },
+    { icon: User, label: "Profile", path: "profile" },
+    { icon: Bell, label: "Notifications", path: "notifications" },
+    { icon: Settings, label: "Settings", path: "settings" },
   ];
 
   return (

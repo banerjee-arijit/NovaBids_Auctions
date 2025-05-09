@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TabSwitcher from "./TabSwitcher";
+import AuctionCard from "./AuctionCard";
+import AuctionData from "../../../static/AuctionData";
 
 const DashboardHomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,8 +42,13 @@ const DashboardHomePage = () => {
             </Button>
           </div>
         </div>
+        <TabSwitcher />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {AuctionData.map((value) => (
+            <AuctionCard key={value.id} auction={value} />
+          ))}
+        </div>
       </div>
-      <TabSwitcher />
     </div>
   );
 };
