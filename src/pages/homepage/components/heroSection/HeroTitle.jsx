@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const HeroTitle = () => {
   return (
@@ -27,7 +28,9 @@ const HeroTitle = () => {
 
       <div className="mt-12 flex flex-col justify-center items-center gap-y-5 sm:mt-10 sm:flex-row sm:gap-y-0 sm:gap-x-6">
         <div className="flex gap-6 justify-center">
-          <Button>Start Bidding</Button>
+          <Link to={"/auth"}>
+            <Button className="cursor-pointer">Start Bidding</Button>
+          </Link>
           <Button variant="outline">See How It Works</Button>
         </div>
       </div>
