@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const TabSwitcher = () => {
+const TabSwitcher = ({ contentText }) => {
   return (
     <Tabs defaultValue="all" className="mb-8">
       <TabsList className="inline-flex md:w-[200px] gap-2">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import TabSwitcher from "./TabSwitcher";
 import AuctionCard from "./AuctionCard";
 import AuctionData from "../../../static/AuctionData";
+import { Input } from "@/components/ui/input";
 
 const DashboardHomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,7 +24,7 @@ const DashboardHomePage = () => {
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 size={18}
               />
-              <input
+              <Input
                 placeholder="Search auctions..."
                 className="pl-10 pr-4 py-2 rounded-full w-full"
                 value={searchQuery}

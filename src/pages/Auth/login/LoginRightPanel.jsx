@@ -6,6 +6,11 @@ import { useNavigate } from "react-router-dom";
 
 const LoginRightPanel = ({ isForgotPassword, setIsForgotPassword }) => {
   const navigate = useNavigate();
+
+  function handleFormSubmit(e) {
+    e.preventDefault();
+    navigate("/dashboard");
+  }
   return (
     <div className="p-8 md:p-10">
       <div className="text-center mb-8">
@@ -54,8 +59,8 @@ const LoginRightPanel = ({ isForgotPassword, setIsForgotPassword }) => {
         )}
 
         <button
-          onClick={navigate("/dashboard")}
           className="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all duration-300"
+          onClick={handleFormSubmit}
         >
           {isForgotPassword ? (
             "Reset Password"
