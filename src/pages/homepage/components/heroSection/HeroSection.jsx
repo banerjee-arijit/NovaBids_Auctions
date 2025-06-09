@@ -25,7 +25,7 @@ const HeroSection = () => {
         <HeroVideo />
       </div>
       <HeroFeatureTitle />
-      <HeroFeatureCard />
+      {/* <HeroFeatureCard /> */}
       <HeroFooter />
     </>
   );

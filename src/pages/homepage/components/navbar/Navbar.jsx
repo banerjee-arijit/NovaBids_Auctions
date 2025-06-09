@@ -2,6 +2,7 @@
 
 import { Link } from "react-router-dom";
 import { Rocket } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import {
   NavigationMenu,
@@ -12,7 +13,6 @@ import {
 } from "@/components/ui/navigation-menu";
 
 import NavGettingStarted from "./NavGettingStarted";
-import NavComponents from "./NavComponents";
 
 export default function Navbar() {
   return (
@@ -31,9 +31,7 @@ export default function Navbar() {
             <NavigationMenuItem>
               <NavGettingStarted />
             </NavigationMenuItem>
-            <NavigationMenuItem>
-              <NavComponents />
-            </NavigationMenuItem>
+
             <NavigationMenuItem>
               <Link to="/docs">
                 <NavigationMenuLink className={navigationMenuTriggerStyle()}>
@@ -43,6 +41,11 @@ export default function Navbar() {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
+      </div>
+      <div className="flex items-center gap-4">
+        <Link to="/auth/register">
+          <Button className="hidden md:inline-flex">Join Novabids</Button>
+        </Link>
       </div>
     </div>
   );
