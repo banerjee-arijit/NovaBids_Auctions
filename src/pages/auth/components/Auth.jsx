@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
-import PhoneAuth from "./PhoneAuth";
 import Logo from "@/components/Logo";
 
 const Auth = () => {
@@ -19,7 +18,6 @@ const Auth = () => {
           <p className="text-muted-foreground">
             {activeTab === "login" && "Sign in to your account"}
             {activeTab === "register" && "Create your account"}
-            {activeTab === "phone" && "Sign in with your phone"}
           </p>
         </div>
 
@@ -45,23 +43,12 @@ const Auth = () => {
             >
               Register
             </button>
-            <button
-              onClick={() => setActiveTab("phone")}
-              className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
-                activeTab === "phone"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Phone
-            </button>
           </div>
 
           {/* Form Content */}
           <div className="space-y-6">
             {activeTab === "login" && <LoginForm />}
             {activeTab === "register" && <RegisterForm />}
-            {activeTab === "phone" && <PhoneAuth />}
           </div>
         </div>
 

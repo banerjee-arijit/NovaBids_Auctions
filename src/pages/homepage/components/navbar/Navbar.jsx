@@ -11,7 +11,6 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import Logo from "@/components/Logo";
 

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { supabase } from "@/SupabaseClient";
 
 const RegisterForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,15 +15,72 @@ const RegisterForm = () => {
     password: "",
     confirmPassword: "",
   });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setError("Passwords don't match!");
+      setLoading(false);
       return;
     }
-    console.log("Register attempt:", formData);
-    // Add registration logic here
+
+    try {
+      // Sign up user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Check user object exists
+      if (!authData.user) {
+        setError("User data missing after signup.");
+        setLoading(false);
+        return;
+      }
+
+      // Save extra info in "profiles" table
+      const { error: dbError } = await supabase.from("profiles").upsert({
+        id: authData.user.id,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+      });
+
+      if (dbError) {
+        setError(dbError.message);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(
+        "Registration successful! Please check your email to verify your account."
+      );
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -33,7 +91,12 @@ const RegisterForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto">
+      {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+      {success && (
+        <div className="text-green-600 text-sm text-center">{success}</div>
+      )}
+
       {/* Name Fields */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -52,6 +115,7 @@ const RegisterForm = () => {
             />
           </div>
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="lastName">Last Name</Label>
           <div className="relative">
@@ -107,6 +171,7 @@ const RegisterForm = () => {
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Toggle Password Visibility"
           >
             {showPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -136,6 +201,7 @@ const RegisterForm = () => {
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Toggle Confirm Password Visibility"
           >
             {showConfirmPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -152,8 +218,9 @@ const RegisterForm = () => {
           type="checkbox"
           className="rounded border-border mt-0.5"
           required
+          id="terms"
         />
-        <span className="text-muted-foreground">
+        <label htmlFor="terms" className="text-muted-foreground">
           I agree to the{" "}
           <button type="button" className="text-primary hover:underline">
             Terms of Service
@@ -162,15 +229,16 @@ const RegisterForm = () => {
           <button type="button" className="text-primary hover:underline">
             Privacy Policy
           </button>
-        </span>
+        </label>
       </div>
 
       {/* Submit Button */}
       <Button
         type="submit"
         className="w-full h-12 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+        disabled={loading}
       >
-        Create Account
+        {loading ? "Creating Account..." : "Create Account"}
       </Button>
     </form>
   );
