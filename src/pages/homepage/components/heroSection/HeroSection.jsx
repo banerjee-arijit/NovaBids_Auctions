@@ -1,11 +1,8 @@
 import Logo from "@/components/Logo";
 import HeroBackground from "./HeroBackground";
 import HeroBanner from "./HeroBanner";
-import HeroFeatureCard from "./HeroFeatureCard";
-import HeroFeatureTitle from "./HeroFeatureTitle";
 import HeroFooter from "./HeroFooter";
 import HeroTitle from "./HeroTitle";
-import HeroVideo from "./HeroVideo";
 import { Gavel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,10 +24,6 @@ const HeroSection = () => {
         </div>
       </section>
 
-      <div className="py-10 bg-white">
-        <HeroVideo />
-      </div>
-      <HeroFeatureTitle />
       {/* <HeroFeatureCard /> */}
       <HeroFooter />
     </div>
