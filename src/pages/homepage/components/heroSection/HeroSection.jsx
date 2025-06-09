@@ -5,6 +5,7 @@ import HeroFooter from "./HeroFooter";
 import HeroTitle from "./HeroTitle";
 import { Gavel } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Herofeature from "./Herofeature";
 
 const HeroSection = () => {
   return (
@@ -24,7 +25,7 @@ const HeroSection = () => {
         </div>
       </section>
 
-      {/* <HeroFeatureCard /> */}
+      <Herofeature />
       <HeroFooter />
     </div>
   );

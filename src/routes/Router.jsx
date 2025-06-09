@@ -1,6 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
 import Homepage from "../pages/homepage/Homepage";
-import MeetOurTeam from "@/pages/ourTeam/MeetOurTeam";
 import DashboardLayout from "@/pages/dashboard/DashboardLayout";
 import DashboardHomePage from "@/pages/dashboard/dashboardIndexPage/DashboardHomePage";
 import LiveAuction from "@/pages/dashboard/liveAuction/LiveAuction";
@@ -12,7 +11,6 @@ import Auth from "@/pages/auth/components/Auth";
 
 const router = createBrowserRouter([
   { path: "/", element: <Homepage /> },
-  { path: "/meet_Team", element: <MeetOurTeam /> },
   { path: "/auth", element: <Auth /> },
 
   {
