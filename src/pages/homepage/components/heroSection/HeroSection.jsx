@@ -6,8 +6,20 @@ import HeroTitle from "./HeroTitle";
 import { Gavel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Herofeature from "./Herofeature";
+import { useAuth } from "@/context/Authcontex";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const HeroSection = () => {
+  // const { user } = useAuth();
+  // const navigate = useNavigate();
+
+  // useEffect(() => {
+  //   if (user) {
+  //     navigate("/dashboard");
+  //   }
+  // }, [user, navigate]);
+
   return (
     <div>
       <div className="sticky top-0 left-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-gray-300 flex items-center justify-between px-4 sm:px-8 py-4">

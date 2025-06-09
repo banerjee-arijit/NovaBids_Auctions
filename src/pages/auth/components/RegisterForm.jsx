@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { supabase } from "@/SupabaseClient";
 import toast, { Toaster } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
-const RegisterForm = () => {
+const RegisterForm = ({ setActiveTab }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ const RegisterForm = () => {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,7 +45,14 @@ const RegisterForm = () => {
       });
 
       if (authError) {
-        toast.error(authError.message);
+        if (
+          authError.message.toLowerCase().includes("user already registered")
+        ) {
+          toast.error("Email is already registered. Please log in instead.");
+        } else {
+          toast.error(authError.message);
+        }
+
         setLoading(false);
         return;
       }
@@ -71,6 +80,7 @@ const RegisterForm = () => {
       toast.success(
         "Registration successful! Check your email for verification."
       );
+
       setFormData({
         firstName: "",
         lastName: "",
@@ -78,6 +88,10 @@ const RegisterForm = () => {
         password: "",
         confirmPassword: "",
       });
+
+      setTimeout(() => {
+        setActiveTab("login");
+      }, 1500);
     } catch (err) {
       toast.error("An unexpected error occurred. Please try again.");
       console.error(err);
@@ -235,7 +249,7 @@ const RegisterForm = () => {
           className="w-full h-12 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
           disabled={loading}
         >
-          {loading ? "Creating Account.." : "Create Account"}
+          {loading ? "Creating Account..." : "Create Account"}
         </Button>
       </form>
     </>

@@ -48,7 +48,9 @@ const Auth = () => {
           {/* Form Content */}
           <div className="space-y-6">
             {activeTab === "login" && <LoginForm />}
-            {activeTab === "register" && <RegisterForm />}
+            {activeTab === "register" && (
+              <RegisterForm setActiveTab={setActiveTab} />
+            )}
           </div>
         </div>
 
