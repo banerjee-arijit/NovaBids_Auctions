@@ -235,7 +235,7 @@ const RegisterForm = () => {
           className="w-full h-12 rounded-xl font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
           disabled={loading}
         >
-          {loading ? "Creating Account..." : "Create Account"}
+          {loading ? "Creating Account.." : "Create Account"}
         </Button>
       </form>
     </>
