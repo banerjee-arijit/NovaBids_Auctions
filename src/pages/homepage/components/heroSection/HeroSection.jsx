@@ -1,3 +1,4 @@
+import Logo from "@/components/Logo";
 import HeroBackground from "./HeroBackground";
 import HeroBanner from "./HeroBanner";
 import HeroFeatureCard from "./HeroFeatureCard";
@@ -9,7 +10,10 @@ import { Gavel } from "lucide-react";
 
 const HeroSection = () => {
   return (
-    <>
+    <div>
+      <div className="absolute top-4 left-4 z-20">
+        <Logo />
+      </div>
       <section className="relative min-h-screen flex items-center justify-center bg-white overflow-hidden z-0">
         <HeroBackground />
         <div className="relative z-10 px-4 sm:px-8 flex flex-col items-center justify-center text-center">
@@ -27,7 +31,7 @@ const HeroSection = () => {
       <HeroFeatureTitle />
       {/* <HeroFeatureCard /> */}
       <HeroFooter />
-    </>
+    </div>
   );
 };
 
