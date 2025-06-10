@@ -9,8 +9,7 @@ import LiveAuctions from "@/pages/dashboard/LiveAuctions";
 import AllAuctions from "@/pages/dashboard/AllAuctions";
 import MyAuctions from "@/pages/dashboard/MyAuctions";
 import Settings from "@/pages/dashboard/Settings";
-import IndexPage from "@/pages/dashboard/IndexPage";
-
+import IndexPage from "@/pages/dashboard/Indexpage";
 const router = createBrowserRouter([
   { path: "/", element: <Homepage /> },
   { path: "/auth", element: <Auth /> },
@@ -19,7 +18,7 @@ const router = createBrowserRouter([
     path: "/dashboard",
     element: <Dashboard />,
     children: [
-      { index: true, element: <IndexPage /> }, // Dashboard homepage
+      { index: true, element: <IndexPage /> },
       { path: "create-auction", element: <CreateAuction /> },
       { path: "live-auctions", element: <LiveAuctions /> },
       { path: "all-auctions", element: <AllAuctions /> },
