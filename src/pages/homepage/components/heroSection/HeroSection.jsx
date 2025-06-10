@@ -11,14 +11,14 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const HeroSection = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  // const { user } = useAuth();
+  // const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
+  // useEffect(() => {
+  //   if (user) {
+  //     navigate("/dashboard");
+  //   }
+  // }, [user, navigate]);
 
   return (
     <div>
