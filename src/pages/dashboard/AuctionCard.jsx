@@ -2,22 +2,30 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Clock, Users, Gavel } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 const AuctionCard = ({ auction }) => {
   const {
-    title,
-    imageUrl,
-    isLive,
-    category,
     id,
+    name,
     description,
-    currentBid,
-    timeLeft,
-    bidCount,
+    initial_bid,
+    current_bid,
+    image_url,
+    category,
+    end_time,
+    bids,
   } = auction;
 
+  const title = name;
+  const imageUrl = image_url;
+  const currentBid = current_bid || initial_bid;
+  const bidCount = bids?.length || 0;
+  const timeLeft = formatDistanceToNow(new Date(end_time), { addSuffix: true });
+  const isLive = new Date() < new Date(end_time);
+
   return (
-    <div className="group bg-card rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-border hover:border-primary/20 transform hover:-translate-y-1 max-w-sm mx-auto">
+    <div className="h-full flex flex-col group bg-card rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 ease-in-out overflow-hidden border border-border hover:border-primary/20 transform hover:-translate-y-1">
       {/* Image Section */}
       <div className="relative w-full aspect-[4/3] bg-muted overflow-hidden">
         {imageUrl ? (
@@ -65,21 +73,23 @@ const AuctionCard = ({ auction }) => {
       </div>
 
       {/* Content Section */}
-      <div className="p-6 space-y-4">
-        {/* Title */}
-        <Link to={`/auctions/${id}`} className="block group">
-          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2 leading-tight">
-            {title}
-          </h3>
-        </Link>
+      <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
+        <div className="space-y-4">
+          {/* Title */}
+          <Link to={`/auctions/${id}`} className="block group">
+            <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2 leading-tight">
+              {title}
+            </h3>
+          </Link>
 
-        {/* Description */}
-        <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
-          {description}
-        </p>
+          {/* Description */}
+          <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
+            {description}
+          </p>
+        </div>
 
         {/* Bid Information */}
-        <div className="bg-muted/30 rounded-2xl p-4 space-y-3">
+        <div className="bg-muted/30 rounded-2xl p-4 space-y-3 mt-auto">
           <div className="flex justify-between items-start">
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

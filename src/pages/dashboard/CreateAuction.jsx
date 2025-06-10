@@ -37,6 +37,7 @@ import { supabase } from "@/SupabaseClient";
 import { useAuth } from "@/context/Authcontex";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
 
 // Zod schema
 const formSchema = z.object({
@@ -48,6 +49,8 @@ const formSchema = z.object({
   maxBid: z.number().min(1, "Max bid must be at least $1"),
   duration: z.number().min(1, "Duration must be at least 1 hour"),
   image: z.any().optional(),
+  isLive: z.boolean().default(false),
+  liveDuration: z.number().optional(),
 });
 
 // Categories
@@ -82,6 +85,8 @@ const CreateAuction = () => {
       initialBid: 0,
       maxBid: 0,
       duration: 24,
+      isLive: false,
+      liveDuration: 10,
     },
   });
 
@@ -126,6 +131,10 @@ const CreateAuction = () => {
         imageUrl = await uploadImage(data.image);
       }
 
+      const endTime = data.isLive
+        ? new Date(Date.now() + data.liveDuration * 60 * 1000)
+        : new Date(Date.now() + data.duration * 60 * 60 * 1000);
+
       const { error } = await supabase.from("auctions").insert([
         {
           seller_id: user.id,
@@ -135,13 +144,13 @@ const CreateAuction = () => {
           description: data.description,
           initial_bid: data.initialBid,
           max_bid: data.maxBid,
-          duration: data.duration,
+          duration: data.isLive ? data.liveDuration : data.duration,
           image_url: imageUrl,
           status: "active",
           created_at: new Date().toISOString(),
-          end_time: new Date(
-            Date.now() + data.duration * 60 * 60 * 1000
-          ).toISOString(),
+          end_time: endTime.toISOString(),
+          is_live: data.isLive,
+          live_duration: data.isLive ? data.liveDuration : null,
         },
       ]);
 
@@ -162,6 +171,7 @@ const CreateAuction = () => {
   const watchedCategory = watch("category");
   const watchedInitialBid = watch("initialBid");
   const watchedMaxBid = watch("maxBid");
+  const watchedIsLive = watch("isLive");
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -448,6 +458,34 @@ const CreateAuction = () => {
 
               <Separator className="my-6" />
 
+              {/* Live Auction Toggle */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Live Auction
+                    </Label>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Enable for quick live auctions with shorter durations
+                    </p>
+                  </div>
+                  <Switch
+                    checked={watchedIsLive}
+                    onCheckedChange={(checked) => {
+                      setValue("isLive", checked);
+                      if (checked) {
+                        setValue("duration", 10);
+                        setValue("liveDuration", 10);
+                      } else {
+                        setValue("duration", 24);
+                      }
+                    }}
+                    disabled={isSubmitting || isUploading}
+                  />
+                </div>
+              </div>
+
               {/* Duration */}
               <div>
                 <Label
@@ -455,37 +493,63 @@ const CreateAuction = () => {
                   className="text-sm font-medium flex items-center gap-2"
                 >
                   <Clock className="h-4 w-4" />
-                  Auction Duration (hours)
+                  {watchedIsLive
+                    ? "Live Duration (minutes)"
+                    : "Auction Duration (hours)"}
                 </Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  min="1"
-                  max="168"
-                  {...register("duration", { valueAsNumber: true })}
-                  className="mt-2 border-gray-300 focus:border-black focus:ring-black"
-                  disabled={isSubmitting || isUploading}
-                />
-                {errors.duration && (
-                  <p className="text-red-600 text-sm mt-1">
-                    {errors.duration.message}
-                  </p>
-                )}
-                <div className="flex gap-2 mt-3 flex-wrap">
-                  {[1, 3, 6, 12, 24, 48, 72, 168].map((hours) => (
-                    <Button
-                      key={hours}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setValue("duration", hours)}
-                      className="border-gray-300 hover:bg-black hover:text-white transition-colors"
+                {watchedIsLive ? (
+                  <div className="flex gap-2 mt-3">
+                    {[10, 30].map((minutes) => (
+                      <Button
+                        key={minutes}
+                        type="button"
+                        variant={
+                          watchedIsLive && watch("liveDuration") === minutes
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setValue("liveDuration", minutes)}
+                        className="border-gray-300 hover:bg-black hover:text-white transition-colors"
+                        disabled={isSubmitting || isUploading}
+                      >
+                        {minutes} min
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      id="duration"
+                      type="number"
+                      min="1"
+                      max="168"
+                      {...register("duration", { valueAsNumber: true })}
+                      className="mt-2 border-gray-300 focus:border-black focus:ring-black"
                       disabled={isSubmitting || isUploading}
-                    >
-                      {hours}h
-                    </Button>
-                  ))}
-                </div>
+                    />
+                    {errors.duration && (
+                      <p className="text-red-600 text-sm mt-1">
+                        {errors.duration.message}
+                      </p>
+                    )}
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                      {[1, 3, 6, 12, 24, 48, 72, 168].map((hours) => (
+                        <Button
+                          key={hours}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setValue("duration", hours)}
+                          className="border-gray-300 hover:bg-black hover:text-white transition-colors"
+                          disabled={isSubmitting || isUploading}
+                        >
+                          {hours}h
+                        </Button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
