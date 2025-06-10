@@ -12,7 +12,6 @@ const IndexPage = () => {
 
   return (
     <div className="ml-0 md:ml-20 min-h-screen">
-      {/* <Background /> */}
       <div className="p-6 md:p-8 lg:p-10 ">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
