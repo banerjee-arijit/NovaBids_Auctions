@@ -3,26 +3,30 @@ import Homepage from "../pages/homepage/Homepage";
 import Auth from "@/pages/auth/components/Auth";
 import Dashboard from "@/pages/dashboard/Dashboard";
 
+// Pages inside Dashboard
+import CreateAuction from "@/pages/dashboard/CreateAuction";
+import LiveAuctions from "@/pages/dashboard/LiveAuctions";
+import AllAuctions from "@/pages/dashboard/AllAuctions";
+import MyAuctions from "@/pages/dashboard/MyAuctions";
+import Settings from "@/pages/dashboard/Settings";
+import IndexPage from "@/pages/dashboard/IndexPage";
+
 const router = createBrowserRouter([
   { path: "/", element: <Homepage /> },
   { path: "/auth", element: <Auth /> },
-  { path: "/dashboard", element: <Dashboard /> },
 
-  // {
-  //   path: "/dashboard",
-  //   element: <DashboardLayout />,
-  //   children: [
-  //     {
-  //       index: true,
-  //       element: <DashboardHomePage />,
-  //     },
-  //     { path: "live-auctions", element: <LiveAuction /> },
-  //     { path: "my-bids", element: <Mybids /> },
-  //     { path: "profile", element: <UserProfile /> },
-  //     { path: "notifications", element: <Notification /> },
-  //     { path: "settings", element: <Setting /> },
-  //   ],
-  // },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+    children: [
+      { index: true, element: <IndexPage /> }, // Dashboard homepage
+      { path: "create-auction", element: <CreateAuction /> },
+      { path: "live-auctions", element: <LiveAuctions /> },
+      { path: "all-auctions", element: <AllAuctions /> },
+      { path: "my-auctions", element: <MyAuctions /> },
+      { path: "settings", element: <Settings /> },
+    ],
+  },
 ]);
 
 export default router;
