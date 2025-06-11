@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Clock,
   DollarSign,
@@ -22,6 +24,13 @@ import {
   Calendar,
   Tag,
   AlertCircle,
+  TrendingUp,
+  Eye,
+  Heart,
+  Share2,
+  ArrowLeft,
+  Crown,
+  Timer,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -35,32 +44,21 @@ const AuctionDetails = () => {
   const [bids, setBids] = useState([]);
   const [timeLeft, setTimeLeft] = useState("");
   const [isEnded, setIsEnded] = useState(false);
+  const [bidding, setBidding] = useState(false);
 
   // Fetch auction details
   const fetchAuctionDetails = async () => {
     try {
+      console.log("Fetching auction with ID:", id);
       const { data, error } = await supabase
         .from("auctions")
-        .select(
-          `
-          *,
-          bids (
-            id,
-            amount,
-            created_at,
-            bidder_id,
-            bidder:profiles (
-              username,
-              avatar_url
-            )
-          )
-        `
-        )
+        .select("*")
         .eq("id", id)
         .single();
 
       if (error) throw error;
 
+      console.log("Auction data:", data);
       setAuction(data);
       setBids(data.bids || []);
       updateTimeLeft(data.end_time);
@@ -77,9 +75,15 @@ const AuctionDetails = () => {
   const updateTimeLeft = (endTime) => {
     const end = new Date(endTime);
     const now = new Date();
-    const timeLeft = formatDistanceToNow(end, { addSuffix: true });
-    setIsEnded(now > end);
-    setTimeLeft(timeLeft);
+    const timeLeft = end - now;
+
+    if (timeLeft <= 0) {
+      setIsEnded(true);
+      setTimeLeft("Auction ended");
+    } else {
+      setIsEnded(false);
+      setTimeLeft(formatDistanceToNow(end, { addSuffix: true }));
+    }
   };
 
   // Place bid
@@ -87,82 +91,99 @@ const AuctionDetails = () => {
     e.preventDefault();
     if (!user) {
       toast.error("Please login to place a bid");
-      navigate("/auth");
       return;
     }
 
-    if (!auction) return;
-
-    const bid = parseFloat(bidAmount);
-    if (isNaN(bid) || bid <= 0) {
+    const bidAmountNum = parseFloat(bidAmount);
+    if (isNaN(bidAmountNum) || bidAmountNum <= 0) {
       toast.error("Please enter a valid bid amount");
       return;
     }
 
-    if (bid <= (auction.current_bid || auction.initial_bid)) {
-      toast.error("Your bid must be higher than the current bid");
-      return;
-    }
-
+    setBidding(true);
     try {
-      const { error } = await supabase.from("bids").insert([
-        {
-          auction_id: id,
-          bidder_id: user.id,
-          amount: bid,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      console.log("Placing bid:", {
+        auctionId: id,
+        bidderId: user.id,
+        amount: bidAmountNum,
+      });
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from("bids")
+        .insert([
+          {
+            auction_id: id,
+            bidder_id: user.id,
+            amount: bidAmountNum,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error placing bid:", error);
+        throw error;
+      }
+
+      console.log("Bid placed successfully:", data);
 
       // Update auction's current bid
       const { error: updateError } = await supabase
         .from("auctions")
-        .update({ current_bid: bid })
+        .update({ current_bid: bidAmountNum })
         .eq("id", id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating auction current bid:", updateError);
+        throw updateError;
+      }
 
       toast.success("Bid placed successfully!");
       setBidAmount("");
       fetchAuctionDetails(); // Refresh auction details
     } catch (error) {
-      console.error("Error placing bid:", error);
+      console.error("Error in handlePlaceBid:", error);
       toast.error("Failed to place bid");
+    } finally {
+      setBidding(false);
     }
   };
 
   useEffect(() => {
     fetchAuctionDetails();
-    // Update time left every minute
     const interval = setInterval(() => {
       if (auction) {
         updateTimeLeft(auction.end_time);
       }
-    }, 60000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [id]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-muted border-t-foreground mx-auto"></div>
+          <p className="text-muted-foreground animate-pulse">
+            Loading auction details...
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!auction) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Auction Not Found</h2>
-          <p className="text-gray-600 mb-4">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md mx-auto px-6">
+          <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-4">Auction Not Found</h2>
+          <p className="text-muted-foreground mb-6">
             The auction you're looking for doesn't exist or has been removed.
           </p>
-          <Button onClick={() => navigate("/dashboard")}>
+          <Button onClick={() => navigate("/dashboard")} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
             Return to Dashboard
           </Button>
         </div>
@@ -175,95 +196,200 @@ const AuctionDetails = () => {
     bids.length > 0 ? Math.max(...bids.map((bid) => bid.amount)) : currentBid;
   const highestBidder =
     bids.length > 0 ? bids.find((bid) => bid.amount === highestBid) : null;
+  const timeLeftInMs = new Date(auction.end_time) - new Date();
+  const urgency = timeLeftInMs < 86400000; // Less than 24 hours
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Auction Details */}
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/dashboard")}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back</span>
+              </Button>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold truncate max-w-[300px] sm:max-w-none">
+                  {auction.name}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <Badge variant="secondary">{auction.category}</Badge>
+                  {auction.is_live && !isEnded && (
+                    <Badge variant="destructive" className="gap-1">
+                      <div className="w-1.5 h-1.5 bg-current rounded-full animate-pulse"></div>
+                      LIVE
+                    </Badge>
+                  )}
+                  {urgency && !isEnded && (
+                    <Badge
+                      variant="outline"
+                      className="gap-1 text-orange-600 border-orange-200"
+                    >
+                      <Timer className="h-3 w-3" />
+                      ENDING SOON
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Heart className="h-4 w-4" />
+                <span className="hidden sm:inline">Save</span>
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Share</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Image and Basic Info */}
+            {/* Image and Current Bid */}
             <Card>
-              <div className="relative aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
+              <div className="relative aspect-video bg-muted overflow-hidden rounded-t-lg">
                 {auction.image_url ? (
                   <img
                     src={auction.image_url}
                     alt={auction.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
                     <Tag className="h-16 w-16" />
                   </div>
                 )}
-                {auction.is_live && !isEnded && (
-                  <div className="absolute top-4 right-4 bg-red-500 text-white text-sm font-semibold px-3 py-1.5 rounded-full flex items-center shadow-lg">
-                    <span className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></span>
-                    LIVE
-                  </div>
-                )}
+
+                {/* Current Bid Overlay */}
+                <div className="absolute bottom-4 left-4 right-4">
+                  <Card className="bg-background/95 backdrop-blur-sm border">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Current Bid
+                          </p>
+                          <p className="text-2xl sm:text-3xl font-bold">
+                            ${currentBid.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Time Left
+                          </p>
+                          <p
+                            className={`text-lg font-semibold ${
+                              urgency ? "text-destructive" : ""
+                            }`}
+                          >
+                            {timeLeft}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h1 className="text-2xl font-bold mb-2">{auction.name}</h1>
-                    <Badge variant="outline" className="mb-4">
-                      {auction.category}
-                    </Badge>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">Current Bid</p>
-                    <p className="text-2xl font-bold text-primary">
-                      ${currentBid.toLocaleString()}
+            </Card>
+
+            {/* Description and Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Description</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                  {auction.description}
+                </p>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="text-center p-3 rounded-lg border">
+                    <Clock className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">Time Left</p>
+                    <p
+                      className={`text-sm ${
+                        urgency
+                          ? "text-destructive font-semibold"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {timeLeft}
                     </p>
                   </div>
-                </div>
-                <p className="text-gray-600 mb-6">{auction.description}</p>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">
-                      {isEnded ? "Auction Ended" : timeLeft}
-                    </span>
+
+                  <div className="text-center p-3 rounded-lg border">
+                    <Users className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">Total Bids</p>
+                    <p className="text-sm text-muted-foreground">
+                      {bids.length}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">
-                      {bids.length} {bids.length === 1 ? "bid" : "bids"}
-                    </span>
+
+                  <div className="text-center p-3 rounded-lg border">
+                    <Calendar className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">Ends</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(auction.end_time), "MMM d, h:mm a")}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">
-                      Ends{" "}
-                      {format(
-                        new Date(auction.end_time),
-                        "MMM d, yyyy 'at' h:mm a"
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">
-                      Seller: {auction.username}
-                    </span>
+
+                  <div className="text-center p-3 rounded-lg border">
+                    <User className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">Seller</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {auction.username}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Bidding Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Place Your Bid</CardTitle>
-                <CardDescription>
-                  Enter your bid amount to participate in this auction
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePlaceBid} className="space-y-4">
-                  <div className="flex gap-4">
-                    <div className="flex-1">
+            {/* Mobile Bidding Section */}
+            <div className="lg:hidden">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gavel className="h-5 w-5" />
+                    Place Your Bid
+                  </CardTitle>
+                  <CardDescription>
+                    Enter your bid amount to participate in this auction
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-lg border bg-muted/50">
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Minimum bid:</span>
+                        <span className="font-semibold">
+                          ${(currentBid + 1).toLocaleString()}
+                        </span>
+                      </div>
+                      {bidAmount && (
+                        <div className="flex justify-between items-center text-sm mt-1">
+                          <span>Your bid:</span>
+                          <span className="font-semibold">
+                            ${parseFloat(bidAmount).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <form onSubmit={handlePlaceBid} className="space-y-3">
                       <Input
                         type="number"
                         placeholder="Enter bid amount"
@@ -271,117 +397,257 @@ const AuctionDetails = () => {
                         onChange={(e) => setBidAmount(e.target.value)}
                         min={currentBid + 1}
                         step="0.01"
-                        disabled={isEnded}
-                        className="text-lg"
+                        disabled={isEnded || bidding}
+                        className="text-lg h-12"
                       />
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={isEnded}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      <Gavel className="h-4 w-4 mr-2" />
-                      Place Bid
-                    </Button>
+                      <Button
+                        type="submit"
+                        disabled={isEnded || bidding}
+                        className="w-full h-12 text-lg gap-2"
+                      >
+                        {bidding ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                            Placing Bid...
+                          </>
+                        ) : isEnded ? (
+                          "Auction Ended"
+                        ) : (
+                          <>
+                            <Gavel className="h-5 w-5" />
+                            Place Bid
+                          </>
+                        )}
+                      </Button>
+                    </form>
                   </div>
-                  <p className="text-sm text-gray-500">
-                    Minimum bid: ${(currentBid + 1).toLocaleString()}
-                  </p>
-                </form>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
-          {/* Right Column - Bids History */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Highest Bidder */}
+            {/* Desktop Bidding Section */}
+            <div className="hidden lg:block">
+              <Card className="sticky top-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gavel className="h-5 w-5" />
+                    Place Your Bid
+                  </CardTitle>
+                  <CardDescription>
+                    Enter your bid amount to participate
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-lg border bg-muted/50">
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Minimum bid:</span>
+                        <span className="font-semibold">
+                          ${(currentBid + 1).toLocaleString()}
+                        </span>
+                      </div>
+                      {bidAmount && (
+                        <div className="flex justify-between items-center text-sm mt-1">
+                          <span>Your bid:</span>
+                          <span className="font-semibold">
+                            ${parseFloat(bidAmount).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <form onSubmit={handlePlaceBid} className="space-y-3">
+                      <Input
+                        type="number"
+                        placeholder="Enter bid amount"
+                        value={bidAmount}
+                        onChange={(e) => setBidAmount(e.target.value)}
+                        min={currentBid + 1}
+                        step="0.01"
+                        disabled={isEnded || bidding}
+                        className="text-lg h-12"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={isEnded || bidding}
+                        className="w-full h-12 text-lg gap-2"
+                      >
+                        {bidding ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                            Placing Bid...
+                          </>
+                        ) : isEnded ? (
+                          "Auction Ended"
+                        ) : (
+                          <>
+                            <Gavel className="h-5 w-5" />
+                            Place Bid
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Leading Bidder */}
             <Card>
-              <CardHeader>
-                <CardTitle>Highest Bidder</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5" />
+                  Leading Bidder
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {highestBidder ? (
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
-                      {highestBidder.bidder?.avatar_url ? (
-                        <img
-                          src={highestBidder.bidder.avatar_url}
-                          alt={highestBidder.bidder.username}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-full h-full p-2 text-gray-400" />
-                      )}
+                  <div className="flex items-center gap-3 p-3 rounded-lg border">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-full bg-muted overflow-hidden">
+                        {highestBidder.bidder?.avatar_url ? (
+                          <img
+                            src={highestBidder.bidder.avatar_url}
+                            alt={highestBidder.bidder.username}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-full h-full p-2 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <Crown className="h-3 w-3 text-primary-foreground" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">
                         {highestBidder.bidder?.username || "Anonymous"}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        ${highestBidder.amount.toLocaleString()}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-bold">
+                          ${highestBidder.amount.toLocaleString()}
+                        </p>
+                        <Badge variant="secondary" className="text-xs">
+                          Leading
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500">No bids yet</p>
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Gavel className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="font-medium">No bids yet</p>
+                    <p className="text-sm">Be the first to place a bid!</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Bids History */}
+            {/* Bid History */}
             <Card>
-              <CardHeader>
-                <CardTitle>Bid History</CardTitle>
-                <CardDescription>Recent bids on this auction</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-lg">
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Bid History
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {bids.length}
+                  </Badge>
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-0">
+                <ScrollArea className="h-80">
                   {bids.length > 0 ? (
-                    bids
-                      .sort(
-                        (a, b) =>
-                          new Date(b.created_at) - new Date(a.created_at)
-                      )
-                      .map((bid) => (
-                        <div
-                          key={bid.id}
-                          className="flex items-center justify-between py-2 border-b last:border-0"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
-                              {bid.bidder?.avatar_url ? (
-                                <img
-                                  src={bid.bidder.avatar_url}
-                                  alt={bid.bidder.username}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <User className="w-full h-full p-1.5 text-gray-400" />
+                    <div className="space-y-1 p-4">
+                      {bids
+                        .sort(
+                          (a, b) =>
+                            new Date(b.created_at) - new Date(a.created_at)
+                        )
+                        .map((bid, index) => (
+                          <div
+                            key={bid.id}
+                            className={`flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-muted/50 ${
+                              index === 0
+                                ? "bg-muted/30 border-l-2 border-primary"
+                                : ""
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="relative flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
+                                  {bid.bidder?.avatar_url ? (
+                                    <img
+                                      src={bid.bidder.avatar_url}
+                                      alt={bid.bidder.username}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <User className="w-full h-full p-1.5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                {index === 0 && (
+                                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                    <TrendingUp className="h-2.5 w-2.5 text-primary-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-sm truncate">
+                                    {bid.bidder?.username || "Anonymous"}
+                                  </p>
+                                  {index === 0 && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs px-1.5 py-0.5"
+                                    >
+                                      Leading
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(
+                                    new Date(bid.created_at),
+                                    "MMM d, h:mm a"
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p
+                                className={`font-bold text-sm ${
+                                  index === 0 ? "text-primary" : ""
+                                }`}
+                              >
+                                ${bid.amount.toLocaleString()}
+                              </p>
+                              {index > 0 && bids[index + 1] && (
+                                <p className="text-xs text-muted-foreground">
+                                  +$
+                                  {(
+                                    bid.amount - bids[index + 1].amount
+                                  ).toLocaleString()}
+                                </p>
                               )}
                             </div>
-                            <div>
-                              <p className="font-medium">
-                                {bid.bidder?.username || "Anonymous"}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {format(
-                                  new Date(bid.created_at),
-                                  "MMM d, h:mm a"
-                                )}
-                              </p>
-                            </div>
                           </div>
-                          <p className="font-semibold text-primary">
-                            ${bid.amount.toLocaleString()}
-                          </p>
-                        </div>
-                      ))
+                        ))}
+                    </div>
                   ) : (
-                    <p className="text-gray-500 text-center py-4">
-                      No bids yet
-                    </p>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <p className="font-medium mb-1">No bids yet</p>
+                      <p className="text-sm">
+                        This auction is waiting for its first bid!
+                      </p>
+                    </div>
                   )}
-                </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           </div>

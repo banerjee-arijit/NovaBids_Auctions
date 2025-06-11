@@ -15,8 +15,6 @@ import AuctionDetails from "@/pages/dashboard/AuctionDetails";
 const router = createBrowserRouter([
   { path: "/", element: <Homepage /> },
   { path: "/auth", element: <Auth /> },
-  { path: "/auction/:id", element: <AuctionDetails /> },
-
   {
     path: "/dashboard",
     element: <Dashboard />,
@@ -27,6 +25,7 @@ const router = createBrowserRouter([
       { path: "all-auctions", element: <AllAuctions /> },
       { path: "my-auctions", element: <MyAuctions /> },
       { path: "settings", element: <Settings /> },
+      { path: "auction/:id", element: <AuctionDetails /> },
     ],
   },
 ]);

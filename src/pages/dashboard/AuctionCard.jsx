@@ -78,7 +78,7 @@ const AuctionCard = ({ auction }) => {
       <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
         <div className="space-y-4">
           {/* Title */}
-          <Link to={`/auction/${id}`} className="block group">
+          <Link to={`/dashboard/auction/${id}`} className="block group">
             <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2 leading-tight">
               {title}
             </h3>
@@ -118,7 +118,7 @@ const AuctionCard = ({ auction }) => {
               <Users className="w-4 h-4 mr-1" />
               {bidCount} {bidCount === 1 ? "bid" : "bids"}
             </span>
-            <Link to={`/auction/${id}`}>
+            <Link to={`/dashboard/auction/${id}`}>
               <Button
                 size="sm"
                 className="rounded-full font-semibold px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200"
