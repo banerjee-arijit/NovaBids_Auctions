@@ -71,18 +71,6 @@ const Navbar = () => {
           <div className="flex items-center justify-between h-16 lg:h-20">
             <Logo />
 
-            {/* Desktop Search */}
-            <div className="hidden lg:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full group">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors duration-200" />
-                <input
-                  type="text"
-                  placeholder="Search auctions..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 hover:bg-gray-100"
-                />
-              </div>
-            </div>
-
             {/* Right Icons */}
             <div className="hidden lg:flex items-center space-x-3">
               <div className="flex items-center space-x-2 mr-4">

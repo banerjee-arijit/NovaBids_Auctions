@@ -15,6 +15,7 @@ const AuctionCard = ({ auction }) => {
     category,
     end_time,
     bids,
+    is_live,
   } = auction;
 
   const title = name;
@@ -22,7 +23,8 @@ const AuctionCard = ({ auction }) => {
   const currentBid = current_bid || initial_bid;
   const bidCount = bids?.length || 0;
   const timeLeft = formatDistanceToNow(new Date(end_time), { addSuffix: true });
-  const isLive = new Date() < new Date(end_time);
+  const isActive = new Date() < new Date(end_time);
+  const showLiveBadge = is_live && isActive;
 
   return (
     <div className="h-full flex flex-col group bg-card rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 ease-in-out overflow-hidden border border-border hover:border-primary/20 transform hover:-translate-y-1">
@@ -54,7 +56,7 @@ const AuctionCard = ({ auction }) => {
         )}
 
         {/* LIVE indicator */}
-        {isLive && (
+        {showLiveBadge && (
           <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center shadow-lg backdrop-blur-sm">
             <span className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></span>
             LIVE
@@ -76,7 +78,7 @@ const AuctionCard = ({ auction }) => {
       <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
         <div className="space-y-4">
           {/* Title */}
-          <Link to={`/auctions/${id}`} className="block group">
+          <Link to={`/auction/${id}`} className="block group">
             <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2 leading-tight">
               {title}
             </h3>
@@ -116,7 +118,7 @@ const AuctionCard = ({ auction }) => {
               <Users className="w-4 h-4 mr-1" />
               {bidCount} {bidCount === 1 ? "bid" : "bids"}
             </span>
-            <Link to={`/auctions/${id}`}>
+            <Link to={`/auction/${id}`}>
               <Button
                 size="sm"
                 className="rounded-full font-semibold px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200"

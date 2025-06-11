@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const TabSwitcher = ({ contentText }) => {
+const TabSwitcher = ({ activeTab, onTabChange }) => {
   return (
-    <Tabs defaultValue="all" className="mb-8">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="mb-8">
       <TabsList className="inline-flex md:w-[200px] gap-2">
         <TabsTrigger value="all">All</TabsTrigger>
         <TabsTrigger value="live">Live</TabsTrigger>

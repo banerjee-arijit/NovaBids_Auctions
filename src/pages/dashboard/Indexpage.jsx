@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TabSwitcher from "@/components/Tabswitcher";
 import AuctionCard from "./AuctionCard";
@@ -7,68 +7,59 @@ import BidderCard from "./BidderCard";
 import { topBidders } from "@/data";
 import { supabase } from "@/SupabaseClient";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import { Input } from "@/components/ui/input";
 
 const IndexPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchAuctions();
-  }, []);
-
-  const fetchAuctions = async () => {
+  const fetchAuctions = async (search = "") => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      let query = supabase
         .from("auctions")
         .select("*")
-        .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(3);
 
-      if (error) throw error;
+      if (activeTab === "live") {
+        query = query.eq("status", "active").eq("is_live", true);
+      }
 
+      if (search) {
+        query = query.or(
+          `name.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`
+        );
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
       setAuctions(data || []);
     } catch (error) {
       console.error("Error fetching auctions:", error);
-      toast.error("Failed to load auctions");
+      toast.error("Failed to fetch auctions");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = async (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
+  useEffect(() => {
+    fetchAuctions(searchQuery);
+  }, [activeTab]);
 
-    if (!query.trim()) {
-      fetchAuctions();
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("auctions")
-        .select("*")
-        .or(
-          `name.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%`
-        )
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-
-      setAuctions(data || []);
-    } catch (error) {
-      console.error("Error searching auctions:", error);
-      toast.error("Failed to search auctions");
-    }
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchAuctions(searchQuery);
   };
 
   return (
     <div className="ml-0 md:ml-20 min-h-screen">
-      <div className="p-6 md:p-8 lg:p-10 ">
+      <div className="p-6 md:p-8 lg:p-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold">All Auctions</h1>
@@ -76,45 +67,39 @@ const IndexPage = () => {
           </div>
 
           <div className="flex items-center justify-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={18}
-              />
-              <input
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <Input
+                type="text"
                 placeholder="Search auctions..."
-                className="pl-10 pr-4 py-2 border-2 rounded-full w-full"
                 value={searchQuery}
-                onChange={handleSearch}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border-gray-300 focus:border-black focus:ring-black"
               />
-              {searchQuery && (
-                <button
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    setSearchQuery("");
-                    fetchAuctions();
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-
-            <Button variant="outline" className="rounded-full">
-              <SlidersHorizontal size={18} className="mr-2" />
-              Filters
-            </Button>
+              <Button
+                type="submit"
+                className="bg-black text-white hover:bg-gray-800"
+              >
+                Search
+              </Button>
+            </form>
           </div>
         </div>
+
         <div className="flex items-center justify-between mb-6">
-          <TabSwitcher />
+          <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
           <Button
             variant="link"
+            onClick={() => navigate("all-auctions")}
             className="text-sm text-blue-600 hover:underline"
           >
             View More
           </Button>
         </div>
+
+        {/* Optional label to show current filter */}
+        <p className="text-sm text-gray-500 mb-4">
+          Showing: {activeTab === "live" ? "Live Auctions" : "All Auctions"}
+        </p>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

@@ -10,9 +10,12 @@ import AllAuctions from "@/pages/dashboard/AllAuctions";
 import MyAuctions from "@/pages/dashboard/MyAuctions";
 import Settings from "@/pages/dashboard/Settings";
 import IndexPage from "@/pages/dashboard/Indexpage";
+import AuctionDetails from "@/pages/dashboard/AuctionDetails";
+
 const router = createBrowserRouter([
   { path: "/", element: <Homepage /> },
   { path: "/auth", element: <Auth /> },
+  { path: "/auction/:id", element: <AuctionDetails /> },
 
   {
     path: "/dashboard",
