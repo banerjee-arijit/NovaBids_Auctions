@@ -32,7 +32,7 @@ import {
   Crown,
   Timer,
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { format } from "date-fns";
 
 const AuctionDetails = () => {
   const { id } = useParams();
@@ -45,37 +45,328 @@ const AuctionDetails = () => {
   const [timeLeft, setTimeLeft] = useState("");
   const [isEnded, setIsEnded] = useState(false);
   const [bidding, setBidding] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
-  // Update time left with real-time countdown
-  const updateTimeLeft = async (endTime) => {
+  // Fetch current user's profile
+  const fetchUserProfile = async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, avatar_url, full_name")
+        .eq("id", user.id)
+        .single();
+      if (error) throw error;
+      setUserProfile(data);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      toast.error("Failed to load user profile");
+    }
+  };
+
+  // Fetch complete bid data with profile information
+  const fetchBidsWithProfiles = async () => {
+    try {
+      const { data: bidsData, error: bidsError } = await supabase
+        .from("bids")
+        .select(
+          `
+          id,
+          amount,
+          created_at,
+          updated_at,
+          bidder_id,
+          auction_id,
+          bidder:profiles!bidder_id (
+            username,
+            avatar_url,
+            full_name
+          )
+        `
+        )
+        .eq("auction_id", id)
+        .order("created_at", { ascending: false });
+
+      if (bidsError) throw bidsError;
+      return bidsData || [];
+    } catch (error) {
+      console.error("Error in fetchBidsWithProfiles:", error);
+      toast.error("Failed to load bids");
+      return [];
+    }
+  };
+
+  // Fetch auction details
+  const fetchAuctionDetails = async () => {
+    try {
+      setLoading(true);
+      console.log("Fetching auction with ID:", id);
+
+      // Fetch auction details
+      const { data: auctionData, error: auctionError } = await supabase
+        .from("auctions")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (auctionError) {
+        console.error("Supabase error:", auctionError);
+        if (auctionError.code === "PGRST116") {
+          toast.error("Auction not found");
+          navigate("/dashboard");
+          return;
+        }
+        throw auctionError;
+      }
+
+      if (!auctionData) {
+        console.log("No auction data found");
+        toast.error("Auction not found");
+        navigate("/dashboard");
+        return;
+      }
+
+      setAuction(auctionData);
+
+      // Fetch bids
+      const bidsData = await fetchBidsWithProfiles();
+      setBids(bidsData);
+
+      console.log("Auction data received:", auctionData);
+      updateTimeLeft(auctionData.end_time);
+    } catch (error) {
+      console.error("Error in fetchAuctionDetails:", error);
+      toast.error("Failed to fetch auction details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateTimeLeft = (endTime) => {
+    if (!endTime) {
+      setTimeLeft("Invalid end time");
+      setIsEnded(true);
+      return;
+    }
+
     const end = new Date(endTime);
     const now = new Date();
-    const timeLeft = end - now;
+    const timeLeftMs = end - now;
 
-    if (timeLeft <= 0) {
+    if (timeLeftMs <= 0) {
       setIsEnded(true);
       setTimeLeft("Auction ended");
-
-      // Update auction status to trigger the database deletion
-      try {
-        const { error } = await supabase
+      if (auction?.status !== "ended") {
+        supabase
           .from("auctions")
           .update({ status: "ended" })
-          .eq("id", id);
-
-        if (error) throw error;
-
-        toast.success("Auction has ended");
-        navigate("/dashboard");
-      } catch (error) {
-        console.error("Error ending auction:", error);
-        toast.error("Failed to end auction");
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Error ending auction:", error);
+              toast.error("Failed to update auction status");
+            } else {
+              toast.success("Auction has ended");
+            }
+          });
       }
     } else {
       setIsEnded(false);
-      setTimeLeft(formatDistanceToNow(end, { addSuffix: true }));
+      const hours = Math.floor(timeLeftMs / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeftMs % (1000 * 60)) / 1000);
+      const formattedHours = hours.toString().padStart(2, "0");
+      const formattedMinutes = minutes.toString().padStart(2, "0");
+      const formattedSeconds = seconds.toString().padStart(2, "0");
+      setTimeLeft(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
     }
   };
+
+  // Initial fetch and real-time subscription
+  useEffect(() => {
+    if (!id) {
+      console.log("No auction ID provided");
+      toast.error("Invalid auction ID");
+      navigate("/dashboard");
+      return;
+    }
+
+    console.log("Setting up auction details for ID:", id);
+
+    // Fetch user profile and auction data
+    fetchUserProfile();
+    fetchAuctionDetails();
+
+    // Create channels
+    const auctionChannel = supabase.channel(`auction-updates:${id}`);
+    const bidChannel = supabase.channel(`bid-updates:${id}`);
+    const profileChannel = user?.id
+      ? supabase.channel(`profile-updates:${user.id}`)
+      : null;
+
+    // Set up auction subscription
+    auctionChannel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "auctions",
+          filter: `id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("Auction change received:", payload);
+          if (payload.eventType === "DELETE") {
+            toast.success("Auction has been deleted");
+            navigate("/dashboard");
+          } else if (payload.eventType === "UPDATE" && payload.new) {
+            setAuction(payload.new);
+            updateTimeLeft(payload.new.end_time);
+            if (payload.new.status === "ended") {
+              setIsEnded(true);
+              setTimeLeft("Auction ended");
+              toast.success("Auction has ended");
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("Auction subscription status:", status);
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to auction updates");
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          toast.error("Lost real-time connection for auction updates");
+        }
+      });
+
+    // Set up bid subscription
+    bidChannel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bids",
+          filter: `auction_id=eq.${id}`,
+        },
+        async (payload) => {
+          console.log("Bid change received:", payload);
+          if (payload.eventType === "INSERT") {
+            const bidData = {
+              ...payload.new,
+              bidder:
+                payload.new.bidder_id === user?.id
+                  ? userProfile
+                  : payload.new.bidder || { username: "Anonymous" },
+            };
+            setBids((currentBids) => {
+              const existingBidIndex = currentBids.findIndex(
+                (bid) => bid.id === bidData.id
+              );
+              if (existingBidIndex === -1) {
+                return [bidData, ...currentBids].sort(
+                  (a, b) => new Date(b.created_at) - new Date(a.created_at)
+                );
+              }
+              const updatedBids = [...currentBids];
+              updatedBids[existingBidIndex] = bidData;
+              return updatedBids.sort(
+                (a, b) => new Date(b.created_at) - new Date(a.created_at)
+              );
+            });
+            setAuction((currentAuction) => ({
+              ...currentAuction,
+              current_bid: payload.new.amount,
+            }));
+            if (payload.new.bidder_id !== user?.id) {
+              toast.success(
+                `New bid: $${payload.new.amount.toLocaleString()} by ${
+                  bidData.bidder?.username || "Anonymous"
+                }`
+              );
+            }
+          } else if (payload.eventType === "UPDATE") {
+            const bidData = {
+              ...payload.new,
+              bidder:
+                payload.new.bidder_id === user?.id
+                  ? userProfile
+                  : payload.new.bidder || { username: "Anonymous" },
+            };
+            setBids((currentBids) =>
+              currentBids
+                .map((bid) => (bid.id === bidData.id ? bidData : bid))
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            );
+            setAuction((currentAuction) => ({
+              ...currentAuction,
+              current_bid: payload.new.amount,
+            }));
+            if (payload.new.bidder_id !== user?.id) {
+              toast.info(
+                `Bid updated: $${payload.new.amount.toLocaleString()} by ${
+                  bidData.bidder?.username || "Anonymous"
+                }`
+              );
+            }
+          } else if (payload.eventType === "DELETE") {
+            setBids((currentBids) =>
+              currentBids.filter((bid) => bid.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("Bid subscription status:", status);
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to bid updates");
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          toast.error("Lost real-time connection for bid updates");
+        }
+      });
+
+    // Set up profile subscription if user exists
+    if (profileChannel) {
+      profileChannel
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log("Profile change received:", payload);
+            setUserProfile(payload.new);
+            setBids((currentBids) =>
+              currentBids.map((bid) =>
+                bid.bidder_id === user.id
+                  ? { ...bid, bidder: payload.new }
+                  : bid
+              )
+            );
+          }
+        )
+        .subscribe();
+    }
+
+    // Set up countdown timer
+    const countdownInterval = setInterval(() => {
+      if (auction?.end_time) {
+        updateTimeLeft(auction.end_time);
+      }
+    }, 1000);
+
+    // Cleanup function
+    return () => {
+      console.log("Cleaning up subscriptions for auction:", id);
+      auctionChannel.unsubscribe();
+      bidChannel.unsubscribe();
+      if (profileChannel) profileChannel.unsubscribe();
+      clearInterval(countdownInterval);
+    };
+  }, [id, user?.id]); // Remove userProfile from dependencies
 
   // Place bid
   const handleBid = async (e) => {
@@ -90,135 +381,114 @@ const AuctionDetails = () => {
       return;
     }
 
+    const bidAmountNum = parseFloat(bidAmount);
+    const currentBid = auction.current_bid || auction.initial_bid;
+    if (bidAmountNum <= currentBid) {
+      toast.error(
+        `Your bid must be higher than $${currentBid.toLocaleString()}`
+      );
+      return;
+    }
+
     setBidding(true);
     try {
-      const { data: bid, error } = await supabase
+      // Check for existing bid
+      const { data: existingBid } = await supabase
         .from("bids")
-        .insert([
-          {
-            auction_id: id,
-            bidder_id: user.id,
-            amount: parseFloat(bidAmount),
-          },
-        ])
-        .select()
+        .select("id, amount")
+        .eq("auction_id", id)
+        .eq("bidder_id", user.id)
         .single();
 
-      if (error) throw error;
+      let result;
+      if (existingBid) {
+        // Update existing bid
+        result = await supabase
+          .from("bids")
+          .update({
+            amount: bidAmountNum,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingBid.id)
+          .select()
+          .single();
+      } else {
+        // Create new bid
+        result = await supabase
+          .from("bids")
+          .insert([
+            {
+              auction_id: id,
+              bidder_id: user.id,
+              amount: bidAmountNum,
+            },
+          ])
+          .select()
+          .single();
+      }
+
+      if (result.error) throw result.error;
+
+      // Update auction current_bid
+      const { error: updateError } = await supabase
+        .from("auctions")
+        .update({ current_bid: bidAmountNum })
+        .eq("id", id);
+      if (updateError) throw updateError;
 
       setBidAmount("");
       toast.success("Bid placed successfully!");
     } catch (error) {
       console.error("Error placing bid:", error);
-      toast.error("Failed to place bid");
+      toast.error("Failed to place bid: " + error.message);
     } finally {
       setBidding(false);
     }
   };
 
-  // Delete auction and its image
+  // Delete auction
   const deleteAuction = async () => {
     try {
-      // Delete image from storage
       if (auction?.image_url) {
         const imagePath = auction.image_url.split("/").pop();
-        await supabase.storage.from("auction-images").remove([imagePath]);
+        const { error: storageError } = await supabase.storage
+          .from("auction-images")
+          .remove([imagePath]);
+        if (storageError) throw storageError;
       }
 
-      // Delete all bids first
       const { error: bidsError } = await supabase
         .from("bids")
         .delete()
         .eq("auction_id", id);
-
       if (bidsError) throw bidsError;
 
-      // Delete the auction
       const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
         .eq("id", id);
-
       if (auctionError) throw auctionError;
 
-      toast.success("Auction has ended and been removed");
+      toast.success("Auction has been deleted");
       navigate("/dashboard");
     } catch (error) {
       console.error("Error deleting auction:", error);
-      toast.error("Failed to remove auction");
+      toast.error("Failed to delete auction: " + error.message);
     }
   };
 
-  // Cleanup ended auctions on component mount
+  // Cleanup ended auctions
   useEffect(() => {
     const cleanupEndedAuctions = async () => {
       try {
-        // Call the cleanup function
         const { error } = await supabase.rpc("cleanup_ended_auctions");
-
         if (error) throw error;
       } catch (error) {
         console.error("Error cleaning up ended auctions:", error);
       }
     };
-
     cleanupEndedAuctions();
   }, []);
-
-  // Fetch initial auction details
-  const fetchAuctionDetails = async () => {
-    try {
-      console.log("Fetching auction with ID:", id);
-      const { data, error } = await supabase
-        .from("auctions")
-        .select(
-          `
-          *,
-          bids (
-            id,
-            amount,
-            created_at,
-            bidder_id,
-            bidder:profiles (
-              username,
-              avatar_url
-            )
-          )
-        `
-        )
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
-
-      console.log("Auction data:", data);
-      setAuction(data);
-      setBids(data.bids || []);
-      updateTimeLeft(data.end_time);
-    } catch (error) {
-      console.error("Error fetching auction:", error);
-      toast.error("Failed to fetch auction details");
-      navigate("/dashboard");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Real-time countdown effect
-  useEffect(() => {
-    if (!auction) return;
-
-    const countdownInterval = setInterval(() => {
-      updateTimeLeft(auction.end_time);
-    }, 1000);
-
-    return () => clearInterval(countdownInterval);
-  }, [auction]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchAuctionDetails();
-  }, [id]);
 
   if (loading) {
     return (
@@ -308,6 +578,16 @@ const AuctionDetails = () => {
                 <Share2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Share</span>
               </Button>
+              {user?.id === auction.seller_id && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={deleteAuction}
+                  className="gap-2"
+                >
+                  Delete Auction
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -568,7 +848,14 @@ const AuctionDetails = () => {
                   <div className="flex items-center gap-3 p-3 rounded-lg border">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-full bg-muted overflow-hidden">
-                        {highestBidder.bidder?.avatar_url ? (
+                        {highestBidder.bidder_id === user?.id &&
+                        userProfile?.avatar_url ? (
+                          <img
+                            src={userProfile.avatar_url}
+                            alt={userProfile.username}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : highestBidder.bidder?.avatar_url ? (
                           <img
                             src={highestBidder.bidder.avatar_url}
                             alt={highestBidder.bidder.username}
@@ -583,9 +870,21 @@ const AuctionDetails = () => {
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">
-                        {highestBidder.bidder?.username || "Anonymous"}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold truncate">
+                          {highestBidder.bidder_id === user?.id
+                            ? userProfile?.username || "You"
+                            : highestBidder.bidder?.username || "Anonymous"}
+                        </p>
+                        {highestBidder.bidder_id === user?.id && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-1.5 py-0.5 text-blue-600 border-blue-200"
+                          >
+                            You
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <p className="text-lg font-bold">
                           ${highestBidder.amount.toLocaleString()}
@@ -623,80 +922,92 @@ const AuctionDetails = () => {
                 <ScrollArea className="h-80">
                   {bids.length > 0 ? (
                     <div className="space-y-1 p-4">
-                      {bids
-                        .sort(
-                          (a, b) =>
-                            new Date(b.created_at) - new Date(a.created_at)
-                        )
-                        .map((bid, index) => (
-                          <div
-                            key={bid.id}
-                            className={`flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-muted/50 ${
-                              index === 0
-                                ? "bg-muted/30 border-l-2 border-primary"
-                                : ""
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="relative flex-shrink-0">
-                                <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
-                                  {bid.bidder?.avatar_url ? (
-                                    <img
-                                      src={bid.bidder.avatar_url}
-                                      alt={bid.bidder.username}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <User className="w-full h-full p-1.5 text-muted-foreground" />
-                                  )}
-                                </div>
-                                {index === 0 && (
-                                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                    <TrendingUp className="h-2.5 w-2.5 text-primary-foreground" />
-                                  </div>
+                      {bids.map((bid, index) => (
+                        <div
+                          key={bid.id}
+                          className={`flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-muted/50 ${
+                            index === 0
+                              ? "bg-muted/30 border-l-2 border-primary"
+                              : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="relative flex-shrink-0">
+                              <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
+                                {bid.bidder_id === user?.id &&
+                                userProfile?.avatar_url ? (
+                                  <img
+                                    src={userProfile.avatar_url}
+                                    alt={userProfile.username}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : bid.bidder?.avatar_url ? (
+                                  <img
+                                    src={bid.bidder.avatar_url}
+                                    alt={bid.bidder.username}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <User className="w-full h-full p-1.5 text-muted-foreground" />
                                 )}
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium text-sm truncate">
-                                    {bid.bidder?.username || "Anonymous"}
-                                  </p>
-                                  {index === 0 && (
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-xs px-1.5 py-0.5"
-                                    >
-                                      Leading
-                                    </Badge>
-                                  )}
+                              {index === 0 && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <TrendingUp className="h-2.5 w-2.5 text-primary-foreground" />
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                  {format(
-                                    new Date(bid.created_at),
-                                    "MMM d, h:mm a"
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <p
-                                className={`font-bold text-sm ${
-                                  index === 0 ? "text-primary" : ""
-                                }`}
-                              >
-                                ${bid.amount.toLocaleString()}
-                              </p>
-                              {index > 0 && bids[index + 1] && (
-                                <p className="text-xs text-muted-foreground">
-                                  +$
-                                  {(
-                                    bid.amount - bids[index + 1].amount
-                                  ).toLocaleString()}
-                                </p>
                               )}
                             </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm truncate">
+                                  {bid.bidder_id === user?.id
+                                    ? userProfile?.username || "You"
+                                    : bid.bidder?.username || "Anonymous"}
+                                </p>
+                                {index === 0 && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs px-1.5 py-0.5"
+                                  >
+                                    Leading
+                                  </Badge>
+                                )}
+                                {bid.bidder_id === user?.id && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs px-1.5 py-0.5 text-blue-600 border-blue-200"
+                                  >
+                                    You
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {format(
+                                  new Date(bid.created_at),
+                                  "MMM d, h:mm a"
+                                )}
+                              </p>
+                            </div>
                           </div>
-                        ))}
+                          <div className="text-right flex-shrink-0">
+                            <p
+                              className={`font-bold text-sm ${
+                                index === 0 ? "text-primary" : ""
+                              }`}
+                            >
+                              ${bid.amount.toLocaleString()}
+                            </p>
+                            {index > 0 && bids[index + 1] && (
+                              <p className="text-xs text-muted-foreground">
+                                +$
+                                {(
+                                  bid.amount - bids[index + 1].amount
+                                ).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">

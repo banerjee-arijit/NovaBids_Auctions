@@ -3,8 +3,6 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TabSwitcher from "@/components/Tabswitcher";
 import AuctionCard from "./AuctionCard";
-import BidderCard from "./BidderCard";
-import { topBidders } from "@/data";
 import { supabase } from "@/SupabaseClient";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +20,7 @@ const IndexPage = () => {
   // Fetch auctions
   const fetchAuctions = async () => {
     try {
+      setLoading(true);
       let query = supabase
         .from("auctions")
         .select("*")
@@ -60,24 +59,92 @@ const IndexPage = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch and real-time subscription
   useEffect(() => {
     fetchAuctions();
+
+    // Set up real-time subscription for auctions
+    const auctionChannel = supabase
+      .channel("auctions-all")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "auctions",
+        },
+        (payload) => {
+          console.log("Real-time auction change:", {
+            event: payload.eventType,
+            new: payload.new,
+            old: payload.old,
+          });
+          setAuctions((prevAuctions) => {
+            const currentTime = new Date();
+            if (payload.eventType === "INSERT") {
+              // Add new auction if it matches the active tab and search query
+              const endTime = new Date(payload.new.end_time);
+              if (
+                endTime > currentTime &&
+                payload.new.status === "active" &&
+                (activeTab !== "live" || payload.new.is_live) &&
+                (!searchQuery ||
+                  payload.new.name
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                  payload.new.description
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                  payload.new.category
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()))
+              ) {
+                return [payload.new, ...prevAuctions];
+              }
+            } else if (payload.eventType === "UPDATE") {
+              // Update existing auction
+              return prevAuctions
+                .map((auction) =>
+                  auction.id === payload.new.id ? payload.new : auction
+                )
+                .filter((auction) => {
+                  const endTime = new Date(auction.end_time);
+                  return endTime > currentTime && auction.status === "active";
+                });
+            } else if (payload.eventType === "DELETE") {
+              // Remove deleted auction
+              return prevAuctions.filter(
+                (auction) => auction.id !== payload.old.id
+              );
+            }
+            return prevAuctions;
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+        if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          toast.error("Lost real-time connection. Reconnecting...");
+        }
+      });
+
+    // Cleanup subscription
+    return () => {
+      console.log("Cleaning up auctions subscription");
+      auctionChannel.unsubscribe();
+    };
   }, [activeTab, searchQuery]);
 
   // Cleanup ended auctions on component mount
   useEffect(() => {
     const cleanupEndedAuctions = async () => {
       try {
-        // Call the cleanup function
         const { error } = await supabase.rpc("cleanup_ended_auctions");
-
         if (error) throw error;
       } catch (error) {
         console.error("Error cleaning up ended auctions:", error);
       }
     };
-
     cleanupEndedAuctions();
   }, []);
 
@@ -125,7 +192,6 @@ const IndexPage = () => {
           </Button>
         </div>
 
-        {/* Optional label to show current filter */}
         <p className="text-sm text-gray-500 mb-4">
           Showing: {activeTab === "live" ? "Live Auctions" : "All Auctions"}
         </p>
@@ -164,12 +230,6 @@ const IndexPage = () => {
           >
             View More
           </Button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {topBidders.map((bidder) => (
-            <BidderCard key={bidder.id} bidder={bidder} />
-          ))}
         </div>
       </div>
     </div>
