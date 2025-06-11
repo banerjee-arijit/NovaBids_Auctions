@@ -46,13 +46,146 @@ const AuctionDetails = () => {
   const [isEnded, setIsEnded] = useState(false);
   const [bidding, setBidding] = useState(false);
 
-  // Fetch auction details
+  // Update time left with real-time countdown
+  const updateTimeLeft = async (endTime) => {
+    const end = new Date(endTime);
+    const now = new Date();
+    const timeLeft = end - now;
+
+    if (timeLeft <= 0) {
+      setIsEnded(true);
+      setTimeLeft("Auction ended");
+
+      // Update auction status to trigger the database deletion
+      try {
+        const { error } = await supabase
+          .from("auctions")
+          .update({ status: "ended" })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        toast.success("Auction has ended");
+        navigate("/dashboard");
+      } catch (error) {
+        console.error("Error ending auction:", error);
+        toast.error("Failed to end auction");
+      }
+    } else {
+      setIsEnded(false);
+      setTimeLeft(formatDistanceToNow(end, { addSuffix: true }));
+    }
+  };
+
+  // Place bid
+  const handleBid = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error("Please login to place a bid");
+      return;
+    }
+
+    if (!bidAmount || isNaN(bidAmount) || parseFloat(bidAmount) <= 0) {
+      toast.error("Please enter a valid bid amount");
+      return;
+    }
+
+    setBidding(true);
+    try {
+      const { data: bid, error } = await supabase
+        .from("bids")
+        .insert([
+          {
+            auction_id: id,
+            bidder_id: user.id,
+            amount: parseFloat(bidAmount),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setBidAmount("");
+      toast.success("Bid placed successfully!");
+    } catch (error) {
+      console.error("Error placing bid:", error);
+      toast.error("Failed to place bid");
+    } finally {
+      setBidding(false);
+    }
+  };
+
+  // Delete auction and its image
+  const deleteAuction = async () => {
+    try {
+      // Delete image from storage
+      if (auction?.image_url) {
+        const imagePath = auction.image_url.split("/").pop();
+        await supabase.storage.from("auction-images").remove([imagePath]);
+      }
+
+      // Delete all bids first
+      const { error: bidsError } = await supabase
+        .from("bids")
+        .delete()
+        .eq("auction_id", id);
+
+      if (bidsError) throw bidsError;
+
+      // Delete the auction
+      const { error: auctionError } = await supabase
+        .from("auctions")
+        .delete()
+        .eq("id", id);
+
+      if (auctionError) throw auctionError;
+
+      toast.success("Auction has ended and been removed");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error deleting auction:", error);
+      toast.error("Failed to remove auction");
+    }
+  };
+
+  // Cleanup ended auctions on component mount
+  useEffect(() => {
+    const cleanupEndedAuctions = async () => {
+      try {
+        // Call the cleanup function
+        const { error } = await supabase.rpc("cleanup_ended_auctions");
+
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error cleaning up ended auctions:", error);
+      }
+    };
+
+    cleanupEndedAuctions();
+  }, []);
+
+  // Fetch initial auction details
   const fetchAuctionDetails = async () => {
     try {
       console.log("Fetching auction with ID:", id);
       const { data, error } = await supabase
         .from("auctions")
-        .select("*")
+        .select(
+          `
+          *,
+          bids (
+            id,
+            amount,
+            created_at,
+            bidder_id,
+            bidder:profiles (
+              username,
+              avatar_url
+            )
+          )
+        `
+        )
         .eq("id", id)
         .single();
 
@@ -71,93 +204,20 @@ const AuctionDetails = () => {
     }
   };
 
-  // Update time left
-  const updateTimeLeft = (endTime) => {
-    const end = new Date(endTime);
-    const now = new Date();
-    const timeLeft = end - now;
-
-    if (timeLeft <= 0) {
-      setIsEnded(true);
-      setTimeLeft("Auction ended");
-    } else {
-      setIsEnded(false);
-      setTimeLeft(formatDistanceToNow(end, { addSuffix: true }));
-    }
-  };
-
-  // Place bid
-  const handlePlaceBid = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      toast.error("Please login to place a bid");
-      return;
-    }
-
-    const bidAmountNum = parseFloat(bidAmount);
-    if (isNaN(bidAmountNum) || bidAmountNum <= 0) {
-      toast.error("Please enter a valid bid amount");
-      return;
-    }
-
-    setBidding(true);
-    try {
-      console.log("Placing bid:", {
-        auctionId: id,
-        bidderId: user.id,
-        amount: bidAmountNum,
-      });
-
-      const { data, error } = await supabase
-        .from("bids")
-        .insert([
-          {
-            auction_id: id,
-            bidder_id: user.id,
-            amount: bidAmountNum,
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error placing bid:", error);
-        throw error;
-      }
-
-      console.log("Bid placed successfully:", data);
-
-      // Update auction's current bid
-      const { error: updateError } = await supabase
-        .from("auctions")
-        .update({ current_bid: bidAmountNum })
-        .eq("id", id);
-
-      if (updateError) {
-        console.error("Error updating auction current bid:", updateError);
-        throw updateError;
-      }
-
-      toast.success("Bid placed successfully!");
-      setBidAmount("");
-      fetchAuctionDetails(); // Refresh auction details
-    } catch (error) {
-      console.error("Error in handlePlaceBid:", error);
-      toast.error("Failed to place bid");
-    } finally {
-      setBidding(false);
-    }
-  };
-
+  // Real-time countdown effect
   useEffect(() => {
-    fetchAuctionDetails();
-    const interval = setInterval(() => {
-      if (auction) {
-        updateTimeLeft(auction.end_time);
-      }
+    if (!auction) return;
+
+    const countdownInterval = setInterval(() => {
+      updateTimeLeft(auction.end_time);
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(countdownInterval);
+  }, [auction]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchAuctionDetails();
   }, [id]);
 
   if (loading) {
@@ -389,7 +449,7 @@ const AuctionDetails = () => {
                       )}
                     </div>
 
-                    <form onSubmit={handlePlaceBid} className="space-y-3">
+                    <form onSubmit={handleBid} className="space-y-3">
                       <Input
                         type="number"
                         placeholder="Enter bid amount"
@@ -459,7 +519,7 @@ const AuctionDetails = () => {
                       )}
                     </div>
 
-                    <form onSubmit={handlePlaceBid} className="space-y-3">
+                    <form onSubmit={handleBid} className="space-y-3">
                       <Input
                         type="number"
                         placeholder="Enter bid amount"

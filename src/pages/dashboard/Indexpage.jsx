@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TabSwitcher from "@/components/Tabswitcher";
@@ -9,6 +9,7 @@ import { supabase } from "@/SupabaseClient";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/Authcontex";
 
 const IndexPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,30 +17,41 @@ const IndexPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const fetchAuctions = async (search = "") => {
+  // Fetch auctions
+  const fetchAuctions = async () => {
     try {
-      setLoading(true);
       let query = supabase
         .from("auctions")
         .select("*")
-        .order("created_at", { ascending: false })
-        .limit(3);
+        .order("created_at", { ascending: false });
+
+      // Only show active auctions
+      query = query.eq("status", "active");
 
       if (activeTab === "live") {
-        query = query.eq("status", "active").eq("is_live", true);
+        query = query.eq("is_live", true);
       }
 
-      if (search) {
+      if (searchQuery) {
         query = query.or(
-          `name.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`
+          `name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`
         );
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
-      setAuctions(data || []);
+
+      // Filter out ended auctions
+      const currentTime = new Date();
+      const activeAuctions = (data || []).filter((auction) => {
+        const endTime = new Date(auction.end_time);
+        return endTime > currentTime;
+      });
+
+      setAuctions(activeAuctions);
     } catch (error) {
       console.error("Error fetching auctions:", error);
       toast.error("Failed to fetch auctions");
@@ -48,13 +60,30 @@ const IndexPage = () => {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
-    fetchAuctions(searchQuery);
-  }, [activeTab]);
+    fetchAuctions();
+  }, [activeTab, searchQuery]);
+
+  // Cleanup ended auctions on component mount
+  useEffect(() => {
+    const cleanupEndedAuctions = async () => {
+      try {
+        // Call the cleanup function
+        const { error } = await supabase.rpc("cleanup_ended_auctions");
+
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error cleaning up ended auctions:", error);
+      }
+    };
+
+    cleanupEndedAuctions();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchAuctions(searchQuery);
+    fetchAuctions();
   };
 
   return (
