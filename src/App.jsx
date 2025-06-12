@@ -1,17 +1,7 @@
-import { BrowserRouter } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
-import { AuthProvider } from "@/context/Authcontex";
-import Router from "@/routes/Router";
+import { Outlet } from "react-router-dom";
 
 function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Router />
-        <Toaster position="top-center" />
-      </AuthProvider>
-    </BrowserRouter>
-  );
+  return <Outlet />;
 }
 
 export default App;

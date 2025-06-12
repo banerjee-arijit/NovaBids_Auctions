@@ -36,8 +36,9 @@ const HeroSection = () => {
           <HeroTitle />
         </div>
       </section>
-
-      <Herofeature />
+      <div className="mt4">
+        <Herofeature />
+      </div>
       <HeroPriceSection />
       <HeroFooter />
     </div>

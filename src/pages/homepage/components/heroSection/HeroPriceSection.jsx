@@ -4,7 +4,6 @@ import { Check } from "lucide-react";
 const HeroPriceSection = () => {
   return (
     <div className="relative isolate bg-white px-6 py-24 sm:py-32 lg:px-8">
-      {/* Background Blur */}
       <div
         aria-hidden="true"
         className="absolute inset-x-0 -top-3 -z-10 transform-gpu overflow-hidden px-36 blur-3xl"
@@ -33,7 +32,6 @@ const HeroPriceSection = () => {
         and direct seller interactions.
       </p>
 
-      {/* Single Card */}
       <div className="mx-auto mt-16 max-w-xl">
         <div className="bg-gray-900 rounded-3xl p-10 shadow-2xl ring-1 ring-gray-900/10">
           <h3 className="text-indigo-400 text-base font-semibold">

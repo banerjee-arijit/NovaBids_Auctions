@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 const HeroFooter = () => {
   return (
     <div className="relative h-screen mt-60 bg-white">
-      {/* Content */}
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-4">
         <div className="max-w-3xl text-center">
           <h1 className="mb-8 text-4xl tracking-tight sm:text-6xl lg:text-7xl text-gray-900">
@@ -20,7 +19,6 @@ const HeroFooter = () => {
             <Button variant="outline">Contact Us</Button>
           </div>
 
-          {/* Contact Email */}
           <p className="text-sm text-gray-500">
             Contact us at{" "}
             <a
