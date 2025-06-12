@@ -941,10 +941,10 @@ const AuctionDetails = () => {
                   <div className="flex items-center gap-3 p-3 rounded-lg border">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-full bg-muted overflow-hidden">
-                        {highestBidder.bidder?.avatar_url ? (
+                        {highestBidder.profiles?.avatar_url ? (
                           <img
-                            src={highestBidder.bidder.avatar_url}
-                            alt={highestBidder.bidder.username}
+                            src={highestBidder.profiles.avatar_url}
+                            alt={`${highestBidder.profiles.first_name} ${highestBidder.profiles.last_name}`}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -960,7 +960,9 @@ const AuctionDetails = () => {
                         <p className="font-semibold truncate">
                           {highestBidder.bidder_id === user?.id
                             ? "You"
-                            : highestBidder.bidder?.username || "Anonymous"}
+                            : `${highestBidder.profiles?.first_name || ""} ${
+                                highestBidder.profiles?.last_name || ""
+                              }`}
                         </p>
                         {highestBidder.bidder_id === user?.id && (
                           <Badge
@@ -1024,13 +1026,13 @@ const AuctionDetails = () => {
                                 userProfile?.avatar_url ? (
                                   <img
                                     src={userProfile.avatar_url}
-                                    alt={userProfile.username}
+                                    alt={`${userProfile.first_name} ${userProfile.last_name}`}
                                     className="w-full h-full object-cover"
                                   />
-                                ) : bid.bidder?.avatar_url ? (
+                                ) : bid.profiles?.avatar_url ? (
                                   <img
-                                    src={bid.bidder.avatar_url}
-                                    alt={bid.bidder.username}
+                                    src={bid.profiles.avatar_url}
+                                    alt={`${bid.profiles.first_name} ${bid.profiles.last_name}`}
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
@@ -1050,8 +1052,8 @@ const AuctionDetails = () => {
                                     ? `${userProfile?.first_name || ""} ${
                                         userProfile?.last_name || ""
                                       }`
-                                    : `${bid.bidder?.first_name || ""} ${
-                                        bid.bidder?.last_name || ""
+                                    : `${bid.profiles?.first_name || ""} ${
+                                        bid.profiles?.last_name || ""
                                       }`}
                                 </p>
                                 {index === 0 && (
