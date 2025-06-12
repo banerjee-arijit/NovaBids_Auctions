@@ -495,7 +495,7 @@ const AuctionDetails = () => {
     const currentBid = auction.current_bid || auction.initial_bid;
     if (bidAmountNum <= currentBid) {
       toast.error(
-        `Your bid must be higher than $${currentBid.toLocaleString()}`
+        `Your bid must be higher than ₹${currentBid.toLocaleString()}`
       );
       return;
     }
@@ -784,7 +784,7 @@ const AuctionDetails = () => {
                             Current Bid
                           </p>
                           <p className="text-2xl sm:text-3xl font-bold">
-                            ${currentBid.toLocaleString()}
+                            ₹{currentBid.toLocaleString()}
                           </p>
                         </div>
                         <div className="text-right">
@@ -796,7 +796,7 @@ const AuctionDetails = () => {
                               urgency ? "text-destructive" : ""
                             }`}
                           >
-                            {timeLeft}
+                            ₹{timeLeft}
                           </p>
                         </div>
                       </div>
@@ -829,7 +829,7 @@ const AuctionDetails = () => {
                           : "text-muted-foreground"
                       }`}
                     >
-                      {timeLeft}
+                      ₹{timeLeft}
                     </p>
                   </div>
 
@@ -878,14 +878,14 @@ const AuctionDetails = () => {
                       <div className="flex justify-between items-center text-sm">
                         <span>Minimum bid:</span>
                         <span className="font-semibold">
-                          ${(currentBid + 1).toLocaleString()}
+                          ₹{(currentBid + 1).toLocaleString()}
                         </span>
                       </div>
                       {bidAmount && (
                         <div className="flex justify-between items-center text-sm mt-1">
                           <span>Your bid:</span>
                           <span className="font-semibold">
-                            ${parseFloat(bidAmount).toLocaleString()}
+                            ₹{parseFloat(bidAmount).toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -948,14 +948,14 @@ const AuctionDetails = () => {
                       <div className="flex justify-between items-center text-sm">
                         <span>Minimum bid:</span>
                         <span className="font-semibold">
-                          ${(currentBid + 1).toLocaleString()}
+                          ₹{(currentBid + 1).toLocaleString()}
                         </span>
                       </div>
                       {bidAmount && (
                         <div className="flex justify-between items-center text-sm mt-1">
                           <span>Your bid:</span>
                           <span className="font-semibold">
-                            ${parseFloat(bidAmount).toLocaleString()}
+                            ₹{parseFloat(bidAmount).toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -1044,7 +1044,7 @@ const AuctionDetails = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="text-lg font-bold">
-                          ${highestBidder.amount.toLocaleString()}
+                          ₹{highestBidder.amount.toLocaleString()}
                         </p>
                         <Badge variant="secondary" className="text-xs">
                           Leading
@@ -1156,11 +1156,11 @@ const AuctionDetails = () => {
                                 index === 0 ? "text-primary" : ""
                               }`}
                             >
-                              ${bid.amount.toLocaleString()}
+                              ₹{bid.amount.toLocaleString()}
                             </p>
                             {index > 0 && bids[index + 1] && (
                               <p className="text-xs text-muted-foreground">
-                                +$
+                                +₹
                                 {(
                                   bid.amount - bids[index + 1].amount
                                 ).toLocaleString()}
@@ -1201,7 +1201,7 @@ const AuctionDetails = () => {
                 <strong>Email:</strong> {leadingBidder.email}
               </p>
               <p>
-                <strong>Current Bid:</strong> ${leadingBidder.amount}
+                <strong>Current Bid:</strong> ₹{leadingBidder.amount}
               </p>
             </div>
           </CardContent>

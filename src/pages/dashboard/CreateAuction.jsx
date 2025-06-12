@@ -45,8 +45,8 @@ const formSchema = z.object({
   category: z.string().min(1, "Please select a category"),
   name: z.string().min(5, "Item name must be at least 5 characters"),
   description: z.string().min(20, "Description must be at least 20 characters"),
-  initialBid: z.number().min(1, "Initial bid must be at least $1"),
-  maxBid: z.number().min(1, "Max bid must be at least $1"),
+  initialBid: z.number().min(1, "Initial bid must be at least ₹1"),
+  maxBid: z.number().min(1, "Max bid must be at least ₹1"),
   duration: z.number().min(1, "Duration must be at least 1 hour"),
   image: z.any().optional(),
   isLive: z.boolean().default(false),
@@ -400,7 +400,7 @@ const CreateAuction = () => {
                     className="text-sm font-medium flex items-center gap-2"
                   >
                     <DollarSign className="h-4 w-4" />
-                    Starting Bid ($)
+                    Starting Bid (₹)
                   </Label>
                   <Input
                     id="initialBid"
@@ -419,7 +419,7 @@ const CreateAuction = () => {
                   )}
                   {watchedInitialBid > 0 && (
                     <p className="text-green-600 text-sm mt-1">
-                      Starting at ${watchedInitialBid}
+                      Starting at ₹{watchedInitialBid}
                     </p>
                   )}
                 </div>
@@ -431,7 +431,7 @@ const CreateAuction = () => {
                     className="text-sm font-medium flex items-center gap-2"
                   >
                     <DollarSign className="h-4 w-4" />
-                    Reserve Price ($)
+                    Reserve Price (₹)
                   </Label>
                   <Input
                     id="maxBid"
@@ -450,7 +450,7 @@ const CreateAuction = () => {
                   )}
                   {watchedMaxBid > 0 && (
                     <p className="text-blue-600 text-sm mt-1">
-                      Reserve at ${watchedMaxBid}
+                      Reserve at ₹{watchedMaxBid}
                     </p>
                   )}
                 </div>

@@ -9,6 +9,7 @@ import Herofeature from "./Herofeature";
 import { useAuth } from "@/context/Authcontex";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import HeroPriceSection from "./HeroPriceSection";
 
 const HeroSection = () => {
   const { user } = useAuth();
@@ -24,7 +25,6 @@ const HeroSection = () => {
     <div>
       <div className="sticky top-0 left-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-gray-300 flex items-center justify-between px-4 sm:px-8 py-4">
         <Logo />
-        <Button>Join Now</Button>
       </div>
       <section className="relative min-h-screen flex items-center justify-center bg-white overflow-hidden z-0">
         <HeroBackground />
@@ -38,6 +38,7 @@ const HeroSection = () => {
       </section>
 
       <Herofeature />
+      <HeroPriceSection />
       <HeroFooter />
     </div>
   );

@@ -1,22 +1,23 @@
 import { Gavel, ShieldCheck, Clock } from "lucide-react"; // Lucide icons
+import dashboard from "../../../../asserts/dashoard.png";
 
 const features = [
   {
-    name: "Real-time Bidding",
+    name: "Live Bidding",
     description:
-      "Place bids and watch the competition in real-time with instant updates, no page refresh needed!",
+      "Experience real-time bidding with instant updates and live auction tracking, making every bid count!",
     icon: Gavel,
   },
   {
-    name: "Secure Transactions",
+    name: "Secure Authentication",
     description:
-      "All payments and user data are protected with advanced encryption and trusted payment gateways.",
+      "Advanced security with multi-factor authentication and encrypted data protection for your peace of mind.",
     icon: ShieldCheck,
   },
   {
-    name: "Scheduled Auctions",
+    name: "Modern Auction",
     description:
-      "Create or join timed auctions with automatic start and end, making the process seamless.",
+      "State-of-the-art auction platform with smart bidding features and seamless user experience.",
     icon: Clock,
   },
 ];
@@ -29,16 +30,12 @@ export default function Herofeature() {
           <div className="lg:pt-4 lg:pr-8">
             <div className="lg:max-w-lg">
               <h2 className="text-base/7 font-semibold text-indigo-600">
-                Power your auctions
+                Next-Gen Auction Platform
               </h2>
               <p className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-gray-900 sm:text-5xl">
-                Smarter. Faster. Safer.
+                Live. Secure. Modern.
               </p>
-              <p className="mt-6 text-lg/8 text-gray-600">
-                Our platform makes it easy to buy and sell through secure,
-                real-time auctions. Whether you're an individual or a business,
-                everything you need is just a click away.
-              </p>
+
               <dl className="mt-10 max-w-xl space-y-8 text-base/7 text-gray-600 lg:max-w-none">
                 {features.map((feature) => (
                   <div key={feature.name} className="relative pl-9">
@@ -57,7 +54,7 @@ export default function Herofeature() {
           </div>
           <img
             alt="Auction platform screenshot"
-            src="https://tailwindcss.com/plus-assets/img/component-images/dark-project-app-screenshot.png"
+            src={dashboard}
             width={2432}
             height={1442}
             className="w-3xl max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-228 md:-ml-4 lg:-ml-0"

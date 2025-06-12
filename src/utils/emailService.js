@@ -19,7 +19,7 @@ export const sendAuctionWinEmail = async (
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h2 style="color: #2c3e50;">Auction Details</h2>
             <p><strong>Item:</strong> ${auction.name}</p>
-            <p><strong>Winning Bid:</strong> $${winningAmount.toLocaleString()}</p>
+            <p><strong>Winning Bid:</strong> ₹${winningAmount.toLocaleString()}</p>
             <p><strong>Category:</strong> ${auction.category}</p>
           </div>
 
