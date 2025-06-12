@@ -5,15 +5,19 @@ import {
   Radio,
   Grid3X3,
   User,
-  Settings,
+  LogOut,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/SupabaseClient";
+import toast from "react-hot-toast";
+import LogoutModal from "@/components/ui/logout-modal";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -26,6 +30,21 @@ const Sidebar = () => {
   ];
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error("Error logging out. Please try again.");
+        return;
+      }
+      toast.success("Logged out successfully!");
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("An unexpected error occurred.");
+    }
+  };
 
   return (
     <>
@@ -90,22 +109,12 @@ const Sidebar = () => {
         {/* Settings */}
         <div className="border-t border-gray-200 p-4">
           <button
-            onClick={() => navigate("/dashboard/settings")}
-            className={`flex items-center space-x-4 w-full px-4 py-3 rounded-xl transition-all duration-300 ${
-              location.pathname === "/dashboard/settings"
-                ? "bg-black text-white shadow"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="flex items-center space-x-4 w-full px-4 py-3 rounded-xl transition-all duration-300 text-gray-700 hover:bg-gray-100"
           >
-            <Settings
-              className={`h-5 w-5 ${
-                location.pathname === "/dashboard/settings"
-                  ? "text-white"
-                  : "text-gray-500"
-              }`}
-            />
+            <LogOut className="h-5 w-5 text-gray-500" />
             {!isCollapsed && (
-              <span className="text-sm font-medium">Settings</span>
+              <span className="text-sm font-medium">Logout</span>
             )}
           </button>
         </div>
@@ -129,18 +138,21 @@ const Sidebar = () => {
             </button>
           ))}
           <button
-            onClick={() => navigate("/dashboard/settings")}
-            className={`flex flex-col items-center px-3 py-1 text-xs ${
-              location.pathname === "/dashboard/settings"
-                ? "text-black font-semibold"
-                : "text-gray-600 hover:text-black"
-            }`}
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="flex flex-col items-center px-3 py-1 text-xs text-gray-600 hover:text-black"
           >
-            <Settings className="h-5 w-5 mb-1" />
-            Settings
+            <LogOut className="h-5 w-5 mb-1" />
+            Logout
           </button>
         </div>
       </div>
+
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+      />
     </>
   );
 };

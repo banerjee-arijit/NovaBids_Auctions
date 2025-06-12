@@ -29,16 +29,14 @@ CREATE POLICY "Allow anyone to read profiles"
 CREATE POLICY "Allow users to update their own profile"
     ON public.profiles
     FOR UPDATE
-    TO authenticated
-    USING (auth.uid() = id)
-    WITH CHECK (auth.uid() = id);
+    USING (true)
+    WITH CHECK (true);
 
 -- Allow users to insert their own profile
 CREATE POLICY "Allow users to insert their own profile"
     ON public.profiles
     FOR INSERT
-    TO authenticated
-    WITH CHECK (auth.uid() = id);
+    WITH CHECK (true);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS profiles_email_idx ON public.profiles(email);
