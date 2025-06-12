@@ -222,18 +222,64 @@ const AuctionDetails = () => {
   // Function to fetch leading bidder
   const fetchLeadingBidder = async () => {
     try {
-      const { data, error } = await supabase
+      // First try to get from leading_bidders table
+      const { data: leadingData, error: leadingError } = await supabase
         .from("leading_bidders")
         .select("*")
         .eq("auction_id", id)
         .single();
 
-      if (error) throw error;
-      if (data) {
+      if (leadingError) {
+        // If no leading bidder record exists, get from bids table
+        const { data: bidData, error: bidError } = await supabase
+          .from("bids")
+          .select(
+            `
+            amount,
+            bidder_id,
+            profiles!bids_bidder_id_fkey (
+              first_name,
+              last_name,
+              email
+            )
+          `
+          )
+          .eq("auction_id", id)
+          .order("amount", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (bidError) throw bidError;
+
+        if (bidData) {
+          const bidderInfo = {
+            name: `${bidData.profiles.first_name} ${bidData.profiles.last_name}`,
+            email: bidData.profiles.email,
+            amount: bidData.amount,
+            bidder_id: bidData.bidder_id,
+          };
+
+          // Create leading bidder record
+          await supabase.from("leading_bidders").upsert(
+            {
+              auction_id: id,
+              bidder_id: bidData.bidder_id,
+              bid_amount: bidData.amount,
+              bidder_name: bidderInfo.name,
+              bidder_email: bidData.profiles.email,
+            },
+            {
+              onConflict: "auction_id",
+            }
+          );
+
+          setLeadingBidder(bidderInfo);
+        }
+      } else if (leadingData) {
         setLeadingBidder({
-          name: data.bidder_name,
-          email: data.bidder_email,
-          amount: data.bid_amount,
+          name: leadingData.bidder_name,
+          email: leadingData.bidder_email,
+          amount: leadingData.bid_amount,
         });
       }
     } catch (error) {
@@ -257,7 +303,16 @@ const AuctionDetails = () => {
         }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating leading bidder:", error);
+        // If there's an error, try to create the table
+        const { error: createError } = await supabase.rpc(
+          "create_leading_bidders_table"
+        );
+        if (createError) {
+          console.error("Error creating leading_bidders table:", createError);
+        }
+      }
     } catch (error) {
       console.error("Error updating leading bidder:", error);
     }
@@ -353,20 +408,18 @@ const AuctionDetails = () => {
               .eq("auction_id", id)
               .order("amount", { ascending: false });
 
-            if (!bidError && updatedBids) {
+            if (!bidError && updatedBids && updatedBids.length > 0) {
               setBids(updatedBids);
               // Update leading bidder
-              if (updatedBids.length > 0) {
-                const highestBid = updatedBids[0];
-                const bidderData = {
-                  name: `${highestBid.profiles.first_name} ${highestBid.profiles.last_name}`,
-                  email: highestBid.profiles.email,
-                  amount: highestBid.amount,
-                  bidder_id: highestBid.bidder_id,
-                };
-                setLeadingBidder(bidderData);
-                await updateLeadingBidder(bidderData);
-              }
+              const highestBid = updatedBids[0];
+              const bidderData = {
+                name: `${highestBid.profiles.first_name} ${highestBid.profiles.last_name}`,
+                email: highestBid.profiles.email,
+                amount: highestBid.amount,
+                bidder_id: highestBid.bidder_id,
+              };
+              setLeadingBidder(bidderData);
+              await updateLeadingBidder(bidderData);
             }
           }
         }
