@@ -108,7 +108,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👥 Authors
 
-- Your Name - Initial work
+- Arijit Banerjee - FrontEnd and Backend
+- Debarati Sarkar - UI/UX Deigner
+- Tanmay Debnath - Data Model Designer
 
 ## 🙏 Acknowledgments
 
