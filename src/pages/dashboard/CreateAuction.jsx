@@ -86,7 +86,7 @@ const CreateAuction = () => {
       maxBid: 0,
       duration: 24,
       isLive: false,
-      liveDuration: 10,
+      liveDuration: 2,
     },
   });
 
@@ -475,8 +475,8 @@ const CreateAuction = () => {
                     onCheckedChange={(checked) => {
                       setValue("isLive", checked);
                       if (checked) {
-                        setValue("duration", 10);
-                        setValue("liveDuration", 10);
+                        setValue("duration", 2);
+                        setValue("liveDuration", 2);
                       } else {
                         setValue("duration", 24);
                       }
@@ -499,7 +499,7 @@ const CreateAuction = () => {
                 </Label>
                 {watchedIsLive ? (
                   <div className="flex gap-2 mt-3">
-                    {[10, 30].map((minutes) => (
+                    {[2, 5].map((minutes) => (
                       <Button
                         key={minutes}
                         type="button"

@@ -47,6 +47,7 @@ const AuctionDetails = () => {
   const [isEnded, setIsEnded] = useState(false);
   const [bidding, setBidding] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [leadingBidder, setLeadingBidder] = useState(null);
 
   // Fetch current user's profile
   const fetchUserProfile = async () => {
@@ -218,6 +219,50 @@ const AuctionDetails = () => {
     }
   };
 
+  // Function to fetch leading bidder
+  const fetchLeadingBidder = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("leading_bidders")
+        .select("*")
+        .eq("auction_id", id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setLeadingBidder({
+          name: data.bidder_name,
+          email: data.bidder_email,
+          amount: data.bid_amount,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching leading bidder:", error);
+    }
+  };
+
+  // Function to update leading bidder
+  const updateLeadingBidder = async (bidderData) => {
+    try {
+      const { error } = await supabase.from("leading_bidders").upsert(
+        {
+          auction_id: id,
+          bidder_id: bidderData.bidder_id,
+          bid_amount: bidderData.amount,
+          bidder_name: bidderData.name,
+          bidder_email: bidderData.email,
+        },
+        {
+          onConflict: "auction_id",
+        }
+      );
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating leading bidder:", error);
+    }
+  };
+
   // Initial fetch and real-time subscription
   useEffect(() => {
     if (!id) {
@@ -232,6 +277,7 @@ const AuctionDetails = () => {
     // Fetch user profile and auction data
     fetchUserProfile();
     fetchAuctionDetails();
+    fetchLeadingBidder();
 
     // Create channels
     const auctionChannel = supabase.channel(`auction-updates:${id}`);
@@ -287,107 +333,40 @@ const AuctionDetails = () => {
         },
         async (payload) => {
           console.log("Bid change received:", payload);
-
-          // Fetch the complete bid data with profile information
-          const { data: bidData, error: bidError } = await supabase
-            .from("bids")
-            .select(
+          if (
+            payload.eventType === "INSERT" ||
+            payload.eventType === "UPDATE"
+          ) {
+            // Fetch updated bids
+            const { data: updatedBids, error: bidError } = await supabase
+              .from("bids")
+              .select(
+                `
+                *,
+                profiles!bids_bidder_id_fkey (
+                  first_name,
+                  last_name,
+                  email
+                )
               `
-              id,
-              amount,
-              created_at,
-              updated_at,
-              bidder_id,
-              auction_id,
-              profiles!bids_bidder_id_fkey (
-                id,
-                first_name,
-                last_name,
-                email
               )
-            `
-            )
-            .eq("id", payload.new.id)
-            .single();
+              .eq("auction_id", id)
+              .order("amount", { ascending: false });
 
-          if (bidError) {
-            console.error("Error fetching bid data:", bidError);
-            return;
-          }
-
-          if (payload.eventType === "INSERT") {
-            // Update bids list
-            setBids((currentBids) => {
-              const existingBidIndex = currentBids.findIndex(
-                (bid) => bid.id === bidData.id
-              );
-              if (existingBidIndex === -1) {
-                return [bidData, ...currentBids].sort(
-                  (a, b) => new Date(b.created_at) - new Date(a.created_at)
-                );
+            if (!bidError && updatedBids) {
+              setBids(updatedBids);
+              // Update leading bidder
+              if (updatedBids.length > 0) {
+                const highestBid = updatedBids[0];
+                const bidderData = {
+                  name: `${highestBid.profiles.first_name} ${highestBid.profiles.last_name}`,
+                  email: highestBid.profiles.email,
+                  amount: highestBid.amount,
+                  bidder_id: highestBid.bidder_id,
+                };
+                setLeadingBidder(bidderData);
+                await updateLeadingBidder(bidderData);
               }
-              const updatedBids = [...currentBids];
-              updatedBids[existingBidIndex] = bidData;
-              return updatedBids.sort(
-                (a, b) => new Date(b.created_at) - new Date(a.created_at)
-              );
-            });
-
-            // Update auction current bid
-            setAuction((currentAuction) => ({
-              ...currentAuction,
-              current_bid: bidData.amount,
-            }));
-
-            // Show notification for new bid
-            if (bidData.bidder_id !== user?.id) {
-              toast.success(
-                `New bid: $${bidData.amount.toLocaleString()} by ${`${
-                  bidData.profiles?.first_name || ""
-                } ${bidData.profiles?.last_name || ""}`}`
-              );
-            }
-          } else if (payload.eventType === "UPDATE") {
-            // Update bids list
-            setBids((currentBids) =>
-              currentBids
-                .map((bid) => (bid.id === bidData.id ? bidData : bid))
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-            );
-
-            // Update auction current bid
-            setAuction((currentAuction) => ({
-              ...currentAuction,
-              current_bid: bidData.amount,
-            }));
-
-            // Show notification for updated bid
-            if (bidData.bidder_id !== user?.id) {
-              toast.info(
-                `Bid updated: $${bidData.amount.toLocaleString()} by ${`${
-                  bidData.profiles?.first_name || ""
-                } ${bidData.profiles?.last_name || ""}`}`
-              );
-            }
-          } else if (payload.eventType === "DELETE") {
-            // Remove deleted bid
-            setBids((currentBids) =>
-              currentBids.filter((bid) => bid.id !== payload.old.id)
-            );
-
-            // If the deleted bid was the highest bid, update the current bid
-            if (payload.old.amount === auction.current_bid) {
-              // Find the new highest bid
-              const newHighestBid = Math.max(
-                ...bids
-                  .filter((bid) => bid.id !== payload.old.id)
-                  .map((bid) => bid.amount)
-              );
-
-              setAuction((currentAuction) => ({
-                ...currentAuction,
-                current_bid: newHighestBid || currentAuction.initial_bid,
-              }));
             }
           }
         }
@@ -1151,6 +1130,28 @@ const AuctionDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Add this section where you want to display the leading bidder */}
+      {leadingBidder && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Current Leading Bidder</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p>
+                <strong>Name:</strong> {leadingBidder.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {leadingBidder.email}
+              </p>
+              <p>
+                <strong>Current Bid:</strong> ${leadingBidder.amount}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
