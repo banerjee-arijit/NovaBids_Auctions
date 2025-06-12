@@ -33,6 +33,7 @@ import {
   Timer,
 } from "lucide-react";
 import { format } from "date-fns";
+import { sendAuctionWinEmail } from "@/utils/emailService";
 
 const AuctionDetails = () => {
   const { id } = useParams();
@@ -134,7 +135,7 @@ const AuctionDetails = () => {
       setBids(bidsData);
 
       console.log("Auction data received:", auctionData);
-      updateTimeLeft(auctionData.end_time);
+      await updateTimeLeft(auctionData.end_time);
     } catch (error) {
       console.error("Error in fetchAuctionDetails:", error);
       toast.error("Failed to fetch auction details");
@@ -143,7 +144,7 @@ const AuctionDetails = () => {
     }
   };
 
-  const updateTimeLeft = (endTime) => {
+  const updateTimeLeft = async (endTime) => {
     if (!endTime) {
       setTimeLeft("Invalid end time");
       setIsEnded(true);
@@ -158,18 +159,52 @@ const AuctionDetails = () => {
       setIsEnded(true);
       setTimeLeft("Auction ended");
       if (auction?.status !== "ended") {
-        supabase
-          .from("auctions")
-          .update({ status: "ended" })
-          .eq("id", id)
-          .then(({ error }) => {
-            if (error) {
-              console.error("Error ending auction:", error);
-              toast.error("Failed to update auction status");
-            } else {
-              toast.success("Auction has ended");
-            }
-          });
+        try {
+          // Update auction status
+          const { error: auctionError } = await supabase
+            .from("auctions")
+            .update({ status: "ended" })
+            .eq("id", id);
+
+          if (auctionError) throw auctionError;
+
+          // Get the winning bid and bidder
+          const { data: winningBid, error: bidError } = await supabase
+            .from("bids")
+            .select(
+              `
+              id,
+              amount,
+              bidder_id,
+              profiles!bids_bidder_id_fkey (
+                email,
+                first_name,
+                last_name
+              )
+            `
+            )
+            .eq("auction_id", id)
+            .order("amount", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (bidError) throw bidError;
+
+          if (winningBid) {
+            // Send email to winner
+            await sendAuctionWinEmail(
+              winningBid.profiles.email,
+              auction,
+              winningBid.amount
+            );
+            console.log("Winner notification email sent successfully");
+          }
+
+          toast.success("Auction has ended");
+        } catch (error) {
+          console.error("Error ending auction:", error);
+          toast.error("Failed to update auction status");
+        }
       }
     } else {
       setIsEnded(false);
@@ -222,7 +257,7 @@ const AuctionDetails = () => {
             navigate("/dashboard");
           } else if (payload.eventType === "UPDATE" && payload.new) {
             setAuction(payload.new);
-            updateTimeLeft(payload.new.end_time);
+            await updateTimeLeft(payload.new.end_time);
             if (payload.new.status === "ended") {
               setIsEnded(true);
               setTimeLeft("Auction ended");
