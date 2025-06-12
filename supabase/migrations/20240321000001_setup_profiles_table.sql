@@ -5,9 +5,9 @@ DROP TABLE IF EXISTS public.profiles CASCADE;
 CREATE TABLE public.profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     username TEXT UNIQUE,
-    first_name TEXT,
-    last_name TEXT,
-    email TEXT,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email TEXT NOT NULL,
     avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -20,6 +20,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow anyone to read profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Allow users to update their own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Allow users to insert their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow trigger to insert profiles" ON public.profiles;
 
 -- Create policies
 -- Allow anyone to read profiles
@@ -40,6 +41,12 @@ CREATE POLICY "Allow users to insert their own profile"
     ON public.profiles
     FOR INSERT
     WITH CHECK (auth.uid() = id);
+
+-- Allow the trigger to insert profiles
+CREATE POLICY "Allow trigger to insert profiles"
+    ON public.profiles
+    FOR INSERT
+    WITH CHECK (true);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS profiles_email_idx ON public.profiles(email);
@@ -66,7 +73,7 @@ CREATE TRIGGER update_profiles_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Insert the profile with the user's email
+    -- Insert the profile with the user's email and name
     INSERT INTO public.profiles (id, email, first_name, last_name)
     VALUES (
         NEW.id,

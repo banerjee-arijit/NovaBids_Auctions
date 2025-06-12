@@ -1,36 +1,28 @@
+-- Drop existing foreign key constraints if they exist
+ALTER TABLE IF EXISTS public.bids
+    DROP CONSTRAINT IF EXISTS bids_bidder_id_fkey,
+    DROP CONSTRAINT IF EXISTS bids_auction_id_fkey;
+
 -- Drop existing table if it exists
 DROP TABLE IF EXISTS public.bids CASCADE;
 
 -- Create bids table
 CREATE TABLE public.bids (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    auction_id UUID NOT NULL,
-    bidder_id UUID NOT NULL,
+    auction_id UUID NOT NULL REFERENCES public.auctions(id) ON DELETE CASCADE,
+    bidder_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     amount DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(auction_id, bidder_id)
+    CONSTRAINT valid_amount CHECK (amount > 0)
 );
-
--- Add foreign key constraints
-ALTER TABLE public.bids
-    ADD CONSTRAINT bids_auction_id_fkey
-    FOREIGN KEY (auction_id)
-    REFERENCES public.auctions(id)
-    ON DELETE CASCADE;
-
-ALTER TABLE public.bids
-    ADD CONSTRAINT bids_bidder_id_fkey
-    FOREIGN KEY (bidder_id)
-    REFERENCES public.profiles(id)
-    ON DELETE CASCADE;
 
 -- Enable Row Level Security
 ALTER TABLE public.bids ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Allow anyone to read bids" ON public.bids;
-DROP POLICY IF EXISTS "Allow users to insert their own bids" ON public.bids;
+DROP POLICY IF EXISTS "Allow authenticated users to insert their own bids" ON public.bids;
 DROP POLICY IF EXISTS "Allow users to update their own bids" ON public.bids;
 DROP POLICY IF EXISTS "Allow users to delete their own bids" ON public.bids;
 
@@ -41,13 +33,13 @@ CREATE POLICY "Allow anyone to read bids"
     FOR SELECT
     USING (true);
 
--- Allow users to insert their own bids
-CREATE POLICY "Allow users to insert their own bids"
+-- Allow authenticated users to insert their own bids
+CREATE POLICY "Allow authenticated users to insert their own bids"
     ON public.bids
     FOR INSERT
     WITH CHECK (
-        auth.uid() = bidder_id
-        AND EXISTS (
+        auth.uid() = bidder_id AND
+        EXISTS (
             SELECT 1 FROM public.auctions
             WHERE id = auction_id
             AND status = 'active'
@@ -59,18 +51,10 @@ CREATE POLICY "Allow users to insert their own bids"
 CREATE POLICY "Allow users to update their own bids"
     ON public.bids
     FOR UPDATE
-    USING (
-        auth.uid() = bidder_id
-        AND EXISTS (
-            SELECT 1 FROM public.auctions
-            WHERE id = auction_id
-            AND status = 'active'
-            AND end_time > now()
-        )
-    )
+    USING (auth.uid() = bidder_id)
     WITH CHECK (
-        auth.uid() = bidder_id
-        AND EXISTS (
+        auth.uid() = bidder_id AND
+        EXISTS (
             SELECT 1 FROM public.auctions
             WHERE id = auction_id
             AND status = 'active'
@@ -83,8 +67,8 @@ CREATE POLICY "Allow users to delete their own bids"
     ON public.bids
     FOR DELETE
     USING (
-        auth.uid() = bidder_id
-        AND EXISTS (
+        auth.uid() = bidder_id AND
+        EXISTS (
             SELECT 1 FROM public.auctions
             WHERE id = auction_id
             AND status = 'active'

@@ -38,10 +38,16 @@ const RegisterForm = ({ setActiveTab }) => {
     }
 
     try {
-      // Sign up user
+      // Sign up user with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+          },
+        },
       });
 
       if (authError) {
@@ -52,7 +58,6 @@ const RegisterForm = ({ setActiveTab }) => {
         } else {
           toast.error(authError.message);
         }
-
         setLoading(false);
         return;
       }
@@ -63,24 +68,9 @@ const RegisterForm = ({ setActiveTab }) => {
         return;
       }
 
-      // Insert additional profile data
-      const { error: dbError } = await supabase.from("profiles").upsert({
-        id: authData.user.id,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-      });
-
-      if (dbError) {
-        toast.error(dbError.message);
-        setLoading(false);
-        return;
-      }
-
       toast.success(
         "Registration successful! Check your email for verification."
       );
-
       setFormData({
         firstName: "",
         lastName: "",
@@ -93,8 +83,8 @@ const RegisterForm = ({ setActiveTab }) => {
         setActiveTab("login");
       }, 1500);
     } catch (err) {
+      console.error("Registration error:", err);
       toast.error("An unexpected error occurred. Please try again.");
-      console.error(err);
     } finally {
       setLoading(false);
     }
