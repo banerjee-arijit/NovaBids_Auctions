@@ -169,36 +169,38 @@ const AuctionDetails = () => {
 
           if (auctionError) throw auctionError;
 
-          // Get the winning bid and bidder
-          const { data: winningBid, error: bidError } = await supabase
-            .from("bids")
-            .select(
-              `
-              id,
-              amount,
-              bidder_id,
-              profiles!bids_bidder_id_fkey (
-                email,
-                first_name,
-                last_name
-              )
-            `
-            )
+          // Fetch the winning bidder from leading_bidders table
+          const { data: winningBidder, error: bidderError } = await supabase
+            .from("leading_bidders")
+            .select("*")
             .eq("auction_id", id)
-            .order("amount", { ascending: false })
-            .limit(1)
             .single();
 
-          if (bidError) throw bidError;
+          if (bidderError) throw bidderError;
 
-          if (winningBid) {
+          if (winningBidder) {
+            // Log winner details
+            console.log("Auction Winner Details:", {
+              name: winningBidder.bidder_name,
+              email: winningBidder.bidder_email,
+              winningAmount: winningBidder.bid_amount,
+              auctionName: auction.name,
+              auctionId: auction.id,
+            });
+
             // Send email to winner
-            await sendAuctionWinEmail(
-              winningBid.profiles.email,
-              auction,
-              winningBid.amount
-            );
-            console.log("Winner notification email sent successfully");
+            try {
+              await sendAuctionWinEmail(
+                winningBidder.bidder_email,
+                auction,
+                winningBidder.bid_amount
+              );
+              console.log("Winner notification email sent successfully");
+              toast.success("Winner notification email sent successfully");
+            } catch (emailError) {
+              console.error("Failed to send winner email:", emailError);
+              toast.error("Failed to send winner notification email");
+            }
           }
 
           toast.success("Auction has ended");
