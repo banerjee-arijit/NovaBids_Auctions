@@ -1,4 +1,4 @@
-import Logo from "@/components/Logo";
+import Logo from "@/components/common/Logo";
 import HeroBackground from "./HeroBackground";
 import HeroBanner from "./HeroBanner";
 import HeroFooter from "./HeroFooter";

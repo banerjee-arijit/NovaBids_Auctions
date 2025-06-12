@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
-import Logo from "@/components/Logo";
+import Logo from "@/components/common/Logo";
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("login");

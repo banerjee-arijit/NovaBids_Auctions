@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/SupabaseClient";
+import { supabase } from "@/services/supabase";
 import { useAuth } from "@/context/Authcontex";
 import toast from "react-hot-toast";
 import {
@@ -33,7 +33,7 @@ import {
   Timer,
 } from "lucide-react";
 import { format } from "date-fns";
-import { sendAuctionWinEmail } from "@/utils/emailService";
+import { sendAuctionWinEmail } from "@/services/email";
 
 const AuctionDetails = () => {
   const { id } = useParams();

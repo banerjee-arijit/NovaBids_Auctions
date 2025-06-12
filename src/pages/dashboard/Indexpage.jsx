@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import TabSwitcher from "@/components/Tabswitcher";
+import TabSwitcher from "@/components/common/TabSwitcher";
 import AuctionCard from "./AuctionCard";
-import { supabase } from "@/SupabaseClient";
+import { supabase } from "@/services/supabase";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";

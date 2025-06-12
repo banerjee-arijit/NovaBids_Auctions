@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import Logo from "@/components/Logo";
-import { supabase } from "@/SupabaseClient";
+import Logo from "@/components/common/Logo";
+import { supabase } from "@/services/supabase";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

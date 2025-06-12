@@ -33,7 +33,7 @@ import {
   Gavel,
   X,
 } from "lucide-react";
-import { supabase } from "@/SupabaseClient";
+import { supabase } from "@/services/supabase";
 import { useAuth } from "@/context/Authcontex";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";

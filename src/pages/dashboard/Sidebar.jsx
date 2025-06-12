@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/SupabaseClient";
+import { supabase } from "@/services/supabase";
 import toast from "react-hot-toast";
 import LogoutModal from "@/components/ui/logout-modal";
 
