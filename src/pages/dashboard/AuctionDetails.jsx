@@ -53,7 +53,7 @@ const AuctionDetails = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("username, avatar_url, full_name")
+        .select("id, first_name, last_name, email")
         .eq("id", user.id)
         .single();
       if (error) throw error;
@@ -77,10 +77,11 @@ const AuctionDetails = () => {
           updated_at,
           bidder_id,
           auction_id,
-          bidder:profiles!bidder_id (
-            username,
-            avatar_url,
-            full_name
+          profiles!bids_bidder_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email
           )
         `
         )
@@ -251,14 +252,36 @@ const AuctionDetails = () => {
         },
         async (payload) => {
           console.log("Bid change received:", payload);
+
+          // Fetch the complete bid data with profile information
+          const { data: bidData, error: bidError } = await supabase
+            .from("bids")
+            .select(
+              `
+              id,
+              amount,
+              created_at,
+              updated_at,
+              bidder_id,
+              auction_id,
+              profiles!bids_bidder_id_fkey (
+                id,
+                first_name,
+                last_name,
+                email
+              )
+            `
+            )
+            .eq("id", payload.new.id)
+            .single();
+
+          if (bidError) {
+            console.error("Error fetching bid data:", bidError);
+            return;
+          }
+
           if (payload.eventType === "INSERT") {
-            const bidData = {
-              ...payload.new,
-              bidder:
-                payload.new.bidder_id === user?.id
-                  ? userProfile
-                  : payload.new.bidder || { username: "Anonymous" },
-            };
+            // Update bids list
             setBids((currentBids) => {
               const existingBidIndex = currentBids.findIndex(
                 (bid) => bid.id === bidData.id
@@ -274,45 +297,63 @@ const AuctionDetails = () => {
                 (a, b) => new Date(b.created_at) - new Date(a.created_at)
               );
             });
+
+            // Update auction current bid
             setAuction((currentAuction) => ({
               ...currentAuction,
-              current_bid: payload.new.amount,
+              current_bid: bidData.amount,
             }));
-            if (payload.new.bidder_id !== user?.id) {
+
+            // Show notification for new bid
+            if (bidData.bidder_id !== user?.id) {
               toast.success(
-                `New bid: $${payload.new.amount.toLocaleString()} by ${
-                  bidData.bidder?.username || "Anonymous"
-                }`
+                `New bid: $${bidData.amount.toLocaleString()} by ${`${
+                  bidData.bidder?.first_name || ""
+                } ${bidData.bidder?.last_name || ""}`}`
               );
             }
           } else if (payload.eventType === "UPDATE") {
-            const bidData = {
-              ...payload.new,
-              bidder:
-                payload.new.bidder_id === user?.id
-                  ? userProfile
-                  : payload.new.bidder || { username: "Anonymous" },
-            };
+            // Update bids list
             setBids((currentBids) =>
               currentBids
                 .map((bid) => (bid.id === bidData.id ? bidData : bid))
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
             );
+
+            // Update auction current bid
             setAuction((currentAuction) => ({
               ...currentAuction,
-              current_bid: payload.new.amount,
+              current_bid: bidData.amount,
             }));
-            if (payload.new.bidder_id !== user?.id) {
+
+            // Show notification for updated bid
+            if (bidData.bidder_id !== user?.id) {
               toast.info(
-                `Bid updated: $${payload.new.amount.toLocaleString()} by ${
-                  bidData.bidder?.username || "Anonymous"
-                }`
+                `Bid updated: $${bidData.amount.toLocaleString()} by ${`${
+                  bidData.bidder?.first_name || ""
+                } ${bidData.bidder?.last_name || ""}`}`
               );
             }
           } else if (payload.eventType === "DELETE") {
+            // Remove deleted bid
             setBids((currentBids) =>
               currentBids.filter((bid) => bid.id !== payload.old.id)
             );
+
+            // If the deleted bid was the highest bid, update the current bid
+            if (payload.old.amount === auction.current_bid) {
+              // Find the new highest bid
+              const newHighestBid = Math.max(
+                ...bids
+                  .filter((bid) => bid.id !== payload.old.id)
+                  .map((bid) => bid.amount)
+              );
+
+              setAuction((currentAuction) => ({
+                ...currentAuction,
+                current_bid: newHighestBid || currentAuction.initial_bid,
+              }));
+            }
           }
         }
       )
@@ -421,6 +462,8 @@ const AuctionDetails = () => {
               auction_id: id,
               bidder_id: user.id,
               amount: bidAmountNum,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             },
           ])
           .select()
@@ -432,7 +475,10 @@ const AuctionDetails = () => {
       // Update auction current_bid
       const { error: updateError } = await supabase
         .from("auctions")
-        .update({ current_bid: bidAmountNum })
+        .update({
+          current_bid: bidAmountNum,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", id);
       if (updateError) throw updateError;
 
@@ -521,6 +567,7 @@ const AuctionDetails = () => {
     );
   }
 
+  // Calculate highest bid and bidder
   const currentBid = auction.current_bid || auction.initial_bid;
   const highestBid =
     bids.length > 0 ? Math.max(...bids.map((bid) => bid.amount)) : currentBid;
@@ -848,14 +895,7 @@ const AuctionDetails = () => {
                   <div className="flex items-center gap-3 p-3 rounded-lg border">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-full bg-muted overflow-hidden">
-                        {highestBidder.bidder_id === user?.id &&
-                        userProfile?.avatar_url ? (
-                          <img
-                            src={userProfile.avatar_url}
-                            alt={userProfile.username}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : highestBidder.bidder?.avatar_url ? (
+                        {highestBidder.bidder?.avatar_url ? (
                           <img
                             src={highestBidder.bidder.avatar_url}
                             alt={highestBidder.bidder.username}
@@ -873,7 +913,7 @@ const AuctionDetails = () => {
                       <div className="flex items-center gap-2">
                         <p className="font-semibold truncate">
                           {highestBidder.bidder_id === user?.id
-                            ? userProfile?.username || "You"
+                            ? "You"
                             : highestBidder.bidder?.username || "Anonymous"}
                         </p>
                         {highestBidder.bidder_id === user?.id && (
@@ -961,8 +1001,12 @@ const AuctionDetails = () => {
                               <div className="flex items-center gap-2">
                                 <p className="font-medium text-sm truncate">
                                   {bid.bidder_id === user?.id
-                                    ? userProfile?.username || "You"
-                                    : bid.bidder?.username || "Anonymous"}
+                                    ? `${userProfile?.first_name || ""} ${
+                                        userProfile?.last_name || ""
+                                      }`
+                                    : `${bid.bidder?.first_name || ""} ${
+                                        bid.bidder?.last_name || ""
+                                      }`}
                                 </p>
                                 {index === 0 && (
                                   <Badge
