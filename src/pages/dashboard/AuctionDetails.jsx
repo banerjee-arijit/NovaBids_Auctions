@@ -215,7 +215,7 @@ const AuctionDetails = () => {
           table: "auctions",
           filter: `id=eq.${id}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log("Auction change received:", payload);
           if (payload.eventType === "DELETE") {
             toast.success("Auction has been deleted");
@@ -308,8 +308,8 @@ const AuctionDetails = () => {
             if (bidData.bidder_id !== user?.id) {
               toast.success(
                 `New bid: $${bidData.amount.toLocaleString()} by ${`${
-                  bidData.bidder?.first_name || ""
-                } ${bidData.bidder?.last_name || ""}`}`
+                  bidData.profiles?.first_name || ""
+                } ${bidData.profiles?.last_name || ""}`}`
               );
             }
           } else if (payload.eventType === "UPDATE") {
@@ -330,8 +330,8 @@ const AuctionDetails = () => {
             if (bidData.bidder_id !== user?.id) {
               toast.info(
                 `Bid updated: $${bidData.amount.toLocaleString()} by ${`${
-                  bidData.bidder?.first_name || ""
-                } ${bidData.bidder?.last_name || ""}`}`
+                  bidData.profiles?.first_name || ""
+                } ${bidData.profiles?.last_name || ""}`}`
               );
             }
           } else if (payload.eventType === "DELETE") {
@@ -383,7 +383,7 @@ const AuctionDetails = () => {
             setBids((currentBids) =>
               currentBids.map((bid) =>
                 bid.bidder_id === user.id
-                  ? { ...bid, bidder: payload.new }
+                  ? { ...bid, profiles: payload.new }
                   : bid
               )
             );
@@ -480,6 +480,53 @@ const AuctionDetails = () => {
         })
         .eq("id", id);
       if (updateError) throw updateError;
+
+      // Fetch the complete bid data with profile information
+      const { data: bidData, error: bidError } = await supabase
+        .from("bids")
+        .select(
+          `
+          id,
+          amount,
+          created_at,
+          updated_at,
+          bidder_id,
+          auction_id,
+          profiles!bids_bidder_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `
+        )
+        .eq("id", result.data.id)
+        .single();
+
+      if (bidError) throw bidError;
+
+      // Update UI immediately
+      setBids((currentBids) => {
+        const existingBidIndex = currentBids.findIndex(
+          (bid) => bid.id === bidData.id
+        );
+        if (existingBidIndex === -1) {
+          return [bidData, ...currentBids].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          );
+        }
+        const updatedBids = [...currentBids];
+        updatedBids[existingBidIndex] = bidData;
+        return updatedBids.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+      });
+
+      // Update auction state
+      setAuction((currentAuction) => ({
+        ...currentAuction,
+        current_bid: bidAmountNum,
+      }));
 
       setBidAmount("");
       toast.success("Bid placed successfully!");

@@ -1,5 +1,8 @@
--- Create profiles table if it doesn't exist
-CREATE TABLE IF NOT EXISTS public.profiles (
+-- Drop existing table if it exists
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- Create profiles table
+CREATE TABLE public.profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     username TEXT UNIQUE,
     first_name TEXT,
@@ -29,14 +32,14 @@ CREATE POLICY "Allow anyone to read profiles"
 CREATE POLICY "Allow users to update their own profile"
     ON public.profiles
     FOR UPDATE
-    USING (true)
-    WITH CHECK (true);
+    USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
 
 -- Allow users to insert their own profile
 CREATE POLICY "Allow users to insert their own profile"
     ON public.profiles
     FOR INSERT
-    WITH CHECK (true);
+    WITH CHECK (auth.uid() = id);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS profiles_email_idx ON public.profiles(email);
