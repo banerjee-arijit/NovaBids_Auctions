@@ -477,7 +477,6 @@ const AuctionDetails = () => {
         .from("auctions")
         .update({
           current_bid: bidAmountNum,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", id);
       if (updateError) throw updateError;

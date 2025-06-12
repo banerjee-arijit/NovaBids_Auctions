@@ -2,7 +2,9 @@
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     username TEXT UNIQUE,
-    full_name TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    email TEXT,
     avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -10,6 +12,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow anyone to read profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Allow users to update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow users to insert their own profile" ON public.profiles;
 
 -- Create policies
 -- Allow anyone to read profiles
@@ -24,6 +31,13 @@ CREATE POLICY "Allow users to update their own profile"
     FOR UPDATE
     TO authenticated
     USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
+
+-- Allow users to insert their own profile
+CREATE POLICY "Allow users to insert their own profile"
+    ON public.profiles
+    FOR INSERT
+    TO authenticated
     WITH CHECK (auth.uid() = id);
 
 -- Create indexes for better performance

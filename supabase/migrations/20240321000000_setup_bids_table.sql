@@ -40,22 +40,54 @@ CREATE POLICY "Allow authenticated users to insert their own bids"
     ON public.bids
     FOR INSERT
     TO authenticated
-    WITH CHECK (auth.uid() = bidder_id);
+    WITH CHECK (
+        auth.uid() = bidder_id AND
+        EXISTS (
+            SELECT 1 FROM public.auctions
+            WHERE id = auction_id
+            AND status = 'active'
+            AND end_time > NOW()
+        )
+    );
 
 -- Allow users to update their own bids
 CREATE POLICY "Allow users to update their own bids"
     ON public.bids
     FOR UPDATE
     TO authenticated
-    USING (auth.uid() = bidder_id)
-    WITH CHECK (auth.uid() = bidder_id);
+    USING (
+        auth.uid() = bidder_id AND
+        EXISTS (
+            SELECT 1 FROM public.auctions
+            WHERE id = auction_id
+            AND status = 'active'
+            AND end_time > NOW()
+        )
+    )
+    WITH CHECK (
+        auth.uid() = bidder_id AND
+        EXISTS (
+            SELECT 1 FROM public.auctions
+            WHERE id = auction_id
+            AND status = 'active'
+            AND end_time > NOW()
+        )
+    );
 
 -- Allow users to delete their own bids
 CREATE POLICY "Allow users to delete their own bids"
     ON public.bids
     FOR DELETE
     TO authenticated
-    USING (auth.uid() = bidder_id);
+    USING (
+        auth.uid() = bidder_id AND
+        EXISTS (
+            SELECT 1 FROM public.auctions
+            WHERE id = auction_id
+            AND status = 'active'
+            AND end_time > NOW()
+        )
+    );
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS bids_auction_id_idx ON public.bids(auction_id);
