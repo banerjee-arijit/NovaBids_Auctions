@@ -413,12 +413,12 @@ const AuctionDetails = () => {
             if (!bidError && updatedBids && updatedBids.length > 0) {
               setBids(updatedBids);
               // Update leading bidder
-              const highestBid = updatedBids[0];
+              const topBid = updatedBids[0];
               const bidderData = {
-                name: `${highestBid.profiles.first_name} ${highestBid.profiles.last_name}`,
-                email: highestBid.profiles.email,
-                amount: highestBid.amount,
-                bidder_id: highestBid.bidder_id,
+                name: `${topBid.profiles.first_name} ${topBid.profiles.last_name}`,
+                email: topBid.profiles.email,
+                amount: topBid.amount,
+                bidder_id: topBid.bidder_id,
               };
               setLeadingBidder(bidderData);
               await updateLeadingBidder(bidderData);
@@ -463,7 +463,7 @@ const AuctionDetails = () => {
 
     // Set up countdown timer
     const countdownInterval = setInterval(() => {
-      if (auction?.end_time) {
+      if (auction?.end_time && !isEnded) {
         updateTimeLeft(auction.end_time);
       }
     }, 1000);
@@ -476,7 +476,7 @@ const AuctionDetails = () => {
       if (profileChannel) profileChannel.unsubscribe();
       clearInterval(countdownInterval);
     };
-  }, [id, user?.id]); // Remove userProfile from dependencies
+  }, [id, user?.id, auction?.end_time, isEnded]);
 
   // Place bid
   const handleBid = async (e) => {
@@ -503,7 +503,7 @@ const AuctionDetails = () => {
     setBidding(true);
     try {
       // Check for existing bid
-      const { data: existingBid } = await supabase
+      const { data: existingBidData } = await supabase
         .from("bids")
         .select("id, amount")
         .eq("auction_id", id)
@@ -511,7 +511,7 @@ const AuctionDetails = () => {
         .single();
 
       let result;
-      if (existingBid) {
+      if (existingBidData) {
         // Update existing bid
         result = await supabase
           .from("bids")
@@ -519,7 +519,7 @@ const AuctionDetails = () => {
             amount: bidAmountNum,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", existingBid.id)
+          .eq("id", existingBidData.id)
           .select()
           .single();
       } else {
@@ -796,7 +796,7 @@ const AuctionDetails = () => {
                               urgency ? "text-destructive" : ""
                             }`}
                           >
-                            ₹{timeLeft}
+                            {timeLeft}
                           </p>
                         </div>
                       </div>
@@ -829,7 +829,7 @@ const AuctionDetails = () => {
                           : "text-muted-foreground"
                       }`}
                     >
-                      ₹{timeLeft}
+                      {timeLeft}
                     </p>
                   </div>
 
@@ -1094,13 +1094,13 @@ const AuctionDetails = () => {
                                 {bid.bidder_id === user?.id &&
                                 userProfile?.avatar_url ? (
                                   <img
-                                    src={userProfile.avatar_url}
+                                    src={`${userProfile.avatar_url}`}
                                     alt={`${userProfile.first_name} ${userProfile.last_name}`}
                                     className="w-full h-full object-cover"
                                   />
                                 ) : bid.profiles?.avatar_url ? (
                                   <img
-                                    src={bid.profiles.avatar_url}
+                                    src={`${bid.profiles.avatar_url}`}
                                     alt={`${bid.profiles.first_name} ${bid.profiles.last_name}`}
                                     className="w-full h-full object-cover"
                                   />
