@@ -651,20 +651,6 @@ const AuctionDetails = () => {
     cleanupEndedAuctions();
   }, []);
 
-  // Add share functionality
-  const handleShare = () => {
-    const currentUrl = window.location.href;
-    navigator.clipboard
-      .writeText(currentUrl)
-      .then(() => {
-        toast.success("Link copied to clipboard!");
-      })
-      .catch((err) => {
-        console.error("Failed to copy link:", err);
-        toast.error("Failed to copy link");
-      });
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -746,12 +732,11 @@ const AuctionDetails = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleShare}
-              >
+              <Button variant="outline" size="sm" className="gap-2">
+                <Heart className="h-4 w-4" />
+                <span className="hidden sm:inline">Save</span>
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2">
                 <Share2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Share</span>
               </Button>
