@@ -1,6 +1,5 @@
 import { Gavel, ShieldCheck, Clock } from "lucide-react";
-import dashboard from "../../../../asserts/dashoard.png";
-import HeroBanner from "./HeroBanner";
+import dashboard from "../../../asserts/dashoard.png";
 
 const features = [
   {

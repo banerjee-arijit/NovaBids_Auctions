@@ -60,7 +60,7 @@ const Auth = () => {
             to="/"
             className="text-sm text-muted-foreground hover:text-primary transition-colors"
           >
-            ← Back to Auctions
+            ← Back to Nova
           </Link>
         </div>
       </div>

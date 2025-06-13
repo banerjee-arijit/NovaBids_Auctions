@@ -2,10 +2,93 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, X } from "lucide-react";
 import { supabase } from "@/services/supabase";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+
+const TermsDialog = ({ isOpen, onClose, type }) => {
+  if (!isOpen) return null;
+
+  const content =
+    type === "terms"
+      ? {
+          title: "Terms of Service",
+          content: [
+            "1. Account Usage:",
+            "• Your email may be used to send important notifications and updates.",
+            "• You are responsible for maintaining the security of your account.",
+            "• Any fraudulent activity will result in immediate account suspension.",
+            "",
+            "2. User Conduct:",
+            "• Users must provide accurate and truthful information.",
+            "• Any form of abuse or harassment will not be tolerated.",
+            "• Users must comply with all applicable laws and regulations.",
+            "",
+            "3. Account Termination:",
+            "• We reserve the right to suspend or terminate accounts that violate our terms.",
+            "• Users may be banned for fraudulent activities or policy violations.",
+            "• We may take legal action against users who engage in illegal activities.",
+            "",
+            "4. Data Usage:",
+            "• We collect and process data as described in our Privacy Policy.",
+            "• We may use your email for service-related communications.",
+            "• We implement security measures to protect your data.",
+          ],
+        }
+      : {
+          title: "Privacy Policy",
+          content: [
+            "1. Information Collection:",
+            "• We collect your email, name, and other provided information.",
+            "• We may collect usage data to improve our services.",
+            "• We use cookies and similar technologies for security and functionality.",
+            "",
+            "2. Data Usage:",
+            "• Your data is used to provide and improve our services.",
+            "• We may send you important notifications and updates.",
+            "• We use your information to prevent fraud and abuse.",
+            "",
+            "3. Data Protection:",
+            "• We implement security measures to protect your data.",
+            "• We do not sell your personal information to third parties.",
+            "• We may share data with law enforcement when required by law.",
+            "",
+            "4. Your Rights:",
+            "• You can request access to your personal data.",
+            "• You can request deletion of your account and data.",
+            "• You can opt-out of non-essential communications.",
+          ],
+        };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-card rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">{content.title}</h2>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-4 text-sm text-muted-foreground">
+          {content.content.map((line, index) => (
+            <p key={index} className={line.startsWith("•") ? "ml-4" : ""}>
+              {line}
+            </p>
+          ))}
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Button onClick={onClose} variant="outline">
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const RegisterForm = ({ setActiveTab }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +101,14 @@ const RegisterForm = ({ setActiveTab }) => {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState("");
   const navigate = useNavigate();
+
+  const openDialog = (type) => {
+    setDialogType(type);
+    setDialogOpen(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -223,11 +313,19 @@ const RegisterForm = ({ setActiveTab }) => {
           />
           <label htmlFor="terms" className="text-muted-foreground">
             I agree to the{" "}
-            <button type="button" className="text-primary hover:underline">
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={() => openDialog("terms")}
+            >
               Terms of Service
             </button>{" "}
             and{" "}
-            <button type="button" className="text-primary hover:underline">
+            <button
+              type="button"
+              className="text-primary hover:underline"
+              onClick={() => openDialog("privacy")}
+            >
               Privacy Policy
             </button>
           </label>
@@ -242,6 +340,12 @@ const RegisterForm = ({ setActiveTab }) => {
           {loading ? "Creating Account..." : "Create Account"}
         </Button>
       </form>
+
+      <TermsDialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        type={dialogType}
+      />
     </>
   );
 };

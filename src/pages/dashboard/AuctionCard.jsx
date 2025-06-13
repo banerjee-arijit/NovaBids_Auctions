@@ -47,55 +47,115 @@ const AuctionCard = ({ auction }) => {
   const currentBid = auction.current_bid || auction.initial_bid || 0;
 
   return (
-    <Card
-      onClick={handleNavigate}
-      className="hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-    >
-      <div className="relative">
-        <img
-          src={auction.image_url || "https://via.placeholder.com/300x200"}
-          alt={auction.name || "Auction image"}
-          className="w-full h-48 object-cover rounded-t-lg"
-        />
-        {auction.is_live && timeLeft !== "Ended" && (
-          <Badge variant="destructive" className="absolute top-2 left-2 gap-1">
-            <div className="w-1.5 h-1.5 bg-current rounded-full animate-pulse"></div>
-            LIVE
-          </Badge>
-        )}
-        {timeLeft !== "Ended" && isEndingSoon() && (
-          <Badge
-            variant="outline"
-            className="absolute top-2 right-2 gap-1 text-orange-600 border-orange-200"
+    <Card className="group overflow-hidden border-0 shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer bg-gradient-to-br from-white via-gray-50/50 to-white backdrop-blur-sm relative">
+      {/* Animated gradient border effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg blur-xl"></div>
+
+      <div
+        onClick={handleNavigate}
+        className="relative bg-white rounded-lg overflow-hidden"
+      >
+        <div className="relative overflow-hidden">
+          <img
+            src={auction.image_url || "https://via.placeholder.com/300x200"}
+            alt={auction.name || "Auction image"}
+            className="w-full h-56 object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+
+          {/* Gradient overlay for better text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+
+          {/* Live badge with enhanced styling */}
+          {auction.is_live && timeLeft !== "Ended" && (
+            <Badge className="absolute top-4 left-4 gap-2 bg-red-500/90 hover:bg-red-500 text-white border-0 backdrop-blur-sm px-3 py-1.5 shadow-lg">
+              <div className="relative">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <div className="absolute inset-0 w-2 h-2 bg-white rounded-full animate-ping"></div>
+              </div>
+              LIVE
+            </Badge>
+          )}
+
+          {/* Ending soon badge with enhanced styling */}
+          {timeLeft !== "Ended" && isEndingSoon() && (
+            <Badge className="absolute top-4 right-4 gap-2 bg-orange-500/90 hover:bg-orange-500 text-white border-0 backdrop-blur-sm px-3 py-1.5 shadow-lg">
+              <Clock className="h-3 w-3 animate-pulse" />
+              ENDING SOON
+            </Badge>
+          )}
+
+          {/* Auction ended overlay */}
+          {timeLeft === "Ended" && (
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
+              <Badge className="bg-gray-800/90 text-white px-6 py-2 text-base font-semibold border-0">
+                AUCTION ENDED
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        <CardHeader className="pb-3 pt-6 px-6">
+          <CardTitle className="text-xl font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors duration-300">
+            {auction.name}
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="px-6 pb-6 space-y-4">
+          {/* Current bid with enhanced styling */}
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-full">
+                <DollarSign className="h-4 w-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Current Bid</p>
+                <p className="text-xl font-bold text-green-700">
+                  ₹{currentBid.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Time left with enhanced styling */}
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-full">
+                <Clock className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Time Left</p>
+                <p
+                  className={`text-xl font-bold ${
+                    timeLeft === "Ended"
+                      ? "text-gray-500"
+                      : isEndingSoon()
+                      ? "text-orange-600"
+                      : "text-blue-700"
+                  }`}
+                >
+                  {timeLeft}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced button */}
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigate();
+            }}
+            className={`w-full py-3 text-base font-semibold transition-all duration-300 rounded-xl ${
+              timeLeft === "Ended"
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-zinc-900 to-neutral-800 text-white hover:from-zinc-800 hover:to-neutral-700 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+            }`}
+            disabled={timeLeft === "Ended"}
           >
-            <Clock className="h-3 w-3" />
-            ENDING SOON
-          </Badge>
-        )}
+            {timeLeft === "Ended" ? "Auction Ended" : "View Auction Details"}
+          </Button>
+        </CardContent>
       </div>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg truncate">{auction.name}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="flex items-center gap-2 text-sm">
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <span>Current Bid: ₹{currentBid.toLocaleString()}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>Time Left: {timeLeft}</span>
-        </div>
-        <Button
-          onClick={(e) => {
-            e.stopPropagation(); // So button doesn't trigger full card click again
-            handleNavigate();
-          }}
-          className="w-full mt-2"
-          disabled={timeLeft === "Ended"}
-        >
-          {timeLeft === "Ended" ? "Auction Ended" : "View Auction"}
-        </Button>
-      </CardContent>
     </Card>
   );
 };

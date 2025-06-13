@@ -24,7 +24,6 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
   Clock,
-  DollarSign,
   Image,
   Tag,
   User,
@@ -39,6 +38,27 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
 
+// Custom Indian Rupee icon component
+const IndianRupee = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+  >
+    <path d="M6 3h12" />
+    <path d="M6 8h12" />
+    <path d="m6 13 8.5 8" />
+    <path d="M15 13c-2.76 0-5-2.24-5-5h7" />
+  </svg>
+);
+
 // Zod schema
 const formSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -46,7 +66,6 @@ const formSchema = z.object({
   name: z.string().min(5, "Item name must be at least 5 characters"),
   description: z.string().min(20, "Description must be at least 20 characters"),
   initialBid: z.number().min(1, "Initial bid must be at least ₹1"),
-  maxBid: z.number().min(1, "Max bid must be at least ₹1"),
   duration: z.number().min(1, "Duration must be at least 1 hour"),
   image: z.any().optional(),
   isLive: z.boolean().default(false),
@@ -83,7 +102,6 @@ const CreateAuction = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       initialBid: 0,
-      maxBid: 0,
       duration: 24,
       isLive: false,
       liveDuration: 2,
@@ -143,7 +161,6 @@ const CreateAuction = () => {
           name: data.name,
           description: data.description,
           initial_bid: data.initialBid,
-          max_bid: data.maxBid,
           duration: data.isLive ? data.liveDuration : data.duration,
           image_url: imageUrl,
           status: "active",
@@ -170,8 +187,6 @@ const CreateAuction = () => {
 
   const watchedCategory = watch("category");
   const watchedInitialBid = watch("initialBid");
-  const watchedMaxBid = watch("maxBid");
-  const watchedIsLive = watch("isLive");
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -384,7 +399,7 @@ const CreateAuction = () => {
           <Card className="border-2 border-gray-100 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="bg-gray-50 border-b">
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <IndianRupee className="h-5 w-5" />
                 Bidding Configuration
               </CardTitle>
               <CardDescription>
@@ -392,14 +407,14 @@ const CreateAuction = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 {/* Starting Bid */}
                 <div>
                   <Label
                     htmlFor="initialBid"
                     className="text-sm font-medium flex items-center gap-2"
                   >
-                    <DollarSign className="h-4 w-4" />
+                    <IndianRupee className="h-4 w-4" />
                     Starting Bid (₹)
                   </Label>
                   <Input
@@ -419,38 +434,7 @@ const CreateAuction = () => {
                   )}
                   {watchedInitialBid > 0 && (
                     <p className="text-green-600 text-sm mt-1">
-                      Starting at ₹{watchedInitialBid}
-                    </p>
-                  )}
-                </div>
-
-                {/* Max Bid */}
-                <div>
-                  <Label
-                    htmlFor="maxBid"
-                    className="text-sm font-medium flex items-center gap-2"
-                  >
-                    <DollarSign className="h-4 w-4" />
-                    Reserve Price (₹)
-                  </Label>
-                  <Input
-                    id="maxBid"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register("maxBid", { valueAsNumber: true })}
-                    placeholder="0.00"
-                    className="mt-1 border-gray-300 focus:border-black focus:ring-black"
-                    disabled={isSubmitting || isUploading}
-                  />
-                  {errors.maxBid && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {errors.maxBid.message}
-                    </p>
-                  )}
-                  {watchedMaxBid > 0 && (
-                    <p className="text-blue-600 text-sm mt-1">
-                      Reserve at ₹{watchedMaxBid}
+                      Starting at ₹{watchedInitialBid.toLocaleString("en-IN")}
                     </p>
                   )}
                 </div>
@@ -464,14 +448,14 @@ const CreateAuction = () => {
                   <div>
                     <Label className="text-sm font-medium flex items-center gap-2">
                       <Clock className="h-4 w-4" />
-                      Live Auction
+                      Live Auction (Beta Version)
                     </Label>
                     <p className="text-sm text-gray-500 mt-1">
                       Enable for quick live auctions with shorter durations
                     </p>
                   </div>
                   <Switch
-                    checked={watchedIsLive}
+                    checked={watch("isLive")}
                     onCheckedChange={(checked) => {
                       setValue("isLive", checked);
                       if (checked) {
@@ -493,18 +477,18 @@ const CreateAuction = () => {
                   className="text-sm font-medium flex items-center gap-2"
                 >
                   <Clock className="h-4 w-4" />
-                  {watchedIsLive
+                  {watch("isLive")
                     ? "Live Duration (minutes)"
                     : "Auction Duration (hours)"}
                 </Label>
-                {watchedIsLive ? (
+                {watch("isLive") ? (
                   <div className="flex gap-2 mt-3">
                     {[2, 5].map((minutes) => (
                       <Button
                         key={minutes}
                         type="button"
                         variant={
-                          watchedIsLive && watch("liveDuration") === minutes
+                          watch("liveDuration") === minutes
                             ? "default"
                             : "outline"
                         }
@@ -555,7 +539,7 @@ const CreateAuction = () => {
           </Card>
 
           {/* Submit */}
-          <Card className="border-2 border-black">
+          <Card className="border-2 border-black mb-10">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-center sm:text-left">
@@ -567,14 +551,6 @@ const CreateAuction = () => {
                   </p>
                 </div>
                 <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-gray-300 hover:bg-gray-50"
-                    disabled={isSubmitting || isUploading}
-                  >
-                    Save Draft
-                  </Button>
                   <Button
                     type="submit"
                     disabled={isSubmitting || isUploading}

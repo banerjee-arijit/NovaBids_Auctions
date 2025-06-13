@@ -1,6 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const HeroFooter = () => {
+  const navigate = useNavigate();
+
+  const handleContactClick = () => {
+    window.location.href = "mailto:arijitbanerjee873@gmail.com";
+  };
+
   return (
     <div className="relative h-screen mt-60 bg-white">
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-4">
@@ -15,8 +22,10 @@ const HeroFooter = () => {
             customizable.
           </p>
           <div className="flex flex-wrap justify-center gap-4 mb-12">
-            <Button>Lunch NovaBids</Button>
-            <Button variant="outline">Contact Us</Button>
+            <Button onClick={() => navigate("/auth")}>Launch NovaBids</Button>
+            <Button variant="outline" onClick={handleContactClick}>
+              Contact Us
+            </Button>
           </div>
 
           <p className="text-sm text-gray-500">
