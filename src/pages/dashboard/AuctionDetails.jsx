@@ -33,7 +33,6 @@ import {
   Timer,
 } from "lucide-react";
 import { format } from "date-fns";
-import { sendAuctionWinEmail } from "@/services/email";
 
 const AuctionDetails = () => {
   const { id } = useParams();
@@ -182,28 +181,13 @@ const AuctionDetails = () => {
             // Log winner details
             console.log("Auction Winner Details:", {
               name: winningBidder.bidder_name,
-              email: winningBidder.bidder_email,
               winningAmount: winningBidder.bid_amount,
               auctionName: auction.name,
               auctionId: auction.id,
             });
 
-            // Send email to winner
-            try {
-              await sendAuctionWinEmail(
-                winningBidder.bidder_email,
-                auction,
-                winningBidder.bid_amount
-              );
-              console.log("Winner notification email sent successfully");
-              toast.success("Winner notification email sent successfully");
-            } catch (emailError) {
-              console.error("Failed to send winner email:", emailError);
-              toast.error("Failed to send winner notification email");
-            }
+            toast.success("Auction has ended");
           }
-
-          toast.success("Auction has ended");
         } catch (error) {
           console.error("Error ending auction:", error);
           toast.error("Failed to update auction status");
@@ -221,71 +205,48 @@ const AuctionDetails = () => {
     }
   };
 
-  // Function to fetch leading bidder
+  // Function to fetch leading bidder from leading_bidders table
   const fetchLeadingBidder = async () => {
     try {
-      // First try to get from leading_bidders table
       const { data: leadingData, error: leadingError } = await supabase
         .from("leading_bidders")
-        .select("*")
+        .select("bidder_name, bidder_email, bid_amount, bidder_id")
         .eq("auction_id", id)
         .single();
 
+      // Log the leading bidder data
+      console.log("Leading bidder data from table:", leadingData);
+
       if (leadingError) {
-        // If no leading bidder record exists, get from bids table
-        const { data: bidData, error: bidError } = await supabase
-          .from("bids")
-          .select(
-            `
-            amount,
-            bidder_id,
-            profiles!bids_bidder_id_fkey (
-              first_name,
-              last_name,
-              email
-            )
-          `
-          )
-          .eq("auction_id", id)
-          .order("amount", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (bidError) throw bidError;
-
-        if (bidData) {
-          const bidderInfo = {
-            name: `${bidData.profiles.first_name} ${bidData.profiles.last_name}`,
-            email: bidData.profiles.email,
-            amount: bidData.amount,
-            bidder_id: bidData.bidder_id,
-          };
-
-          // Create leading bidder record
-          await supabase.from("leading_bidders").upsert(
-            {
-              auction_id: id,
-              bidder_id: bidData.bidder_id,
-              bid_amount: bidData.amount,
-              bidder_name: bidderInfo.name,
-              bidder_email: bidData.profiles.email,
-            },
-            {
-              onConflict: "auction_id",
-            }
-          );
-
-          setLeadingBidder(bidderInfo);
+        if (leadingError.code === "PGRST116") {
+          // No leading bidder found
+          console.log("No leading bidder found in the table");
+          setLeadingBidder(null);
+          return;
         }
-      } else if (leadingData) {
+        throw leadingError;
+      }
+
+      if (leadingData) {
+        console.log("Setting leading bidder:", {
+          name: leadingData.bidder_name,
+          email: leadingData.bidder_email,
+          amount: leadingData.bid_amount,
+          bidder_id: leadingData.bidder_id,
+        });
         setLeadingBidder({
           name: leadingData.bidder_name,
           email: leadingData.bidder_email,
           amount: leadingData.bid_amount,
+          bidder_id: leadingData.bidder_id,
         });
+      } else {
+        setLeadingBidder(null);
       }
     } catch (error) {
       console.error("Error fetching leading bidder:", error);
+      toast.error("Failed to load leading bidder");
+      setLeadingBidder(null);
     }
   };
 
@@ -307,16 +268,12 @@ const AuctionDetails = () => {
 
       if (error) {
         console.error("Error updating leading bidder:", error);
-        // If there's an error, try to create the table
-        const { error: createError } = await supabase.rpc(
-          "create_leading_bidders_table"
-        );
-        if (createError) {
-          console.error("Error creating leading_bidders table:", createError);
-        }
+        // Don't throw error, just log it
+        return;
       }
     } catch (error) {
-      console.error("Error updating leading bidder:", error);
+      console.error("Error in updateLeadingBidder:", error);
+      // Don't throw error, just log it
     }
   };
 
@@ -334,6 +291,22 @@ const AuctionDetails = () => {
     // Fetch user profile and auction data
     fetchUserProfile();
     fetchAuctionDetails();
+
+    // Log leading bidders table data
+    const logLeadingBidders = async () => {
+      const { data, error } = await supabase
+        .from("leading_bidders")
+        .select("*")
+        .eq("auction_id", id);
+
+      if (error) {
+        console.error("Error fetching leading bidders:", error);
+      } else {
+        console.log("Leading bidders table data:", data);
+      }
+    };
+
+    logLeadingBidders();
     fetchLeadingBidder();
 
     // Create channels
@@ -365,6 +338,22 @@ const AuctionDetails = () => {
               setIsEnded(true);
               setTimeLeft("Auction ended");
               toast.success("Auction has ended");
+
+              // Log leading bidder details when auction ends
+              const { data: leadingBidderData, error } = await supabase
+                .from("leading_bidders")
+                .select("bidder_id, bidder_name, bidder_email, bid_amount")
+                .eq("auction_id", id)
+                .single();
+
+              if (error) {
+                console.log("Auction ended with no leading bidder:", null);
+              } else {
+                console.log("Auction ended! Leading bidder details:", {
+                  bidder_id: leadingBidderData?.bidder_id || null,
+                  bidder_name: leadingBidderData?.bidder_name || null,
+                });
+              }
             }
           }
         }
@@ -597,6 +586,18 @@ const AuctionDetails = () => {
         current_bid: bidAmountNum,
       }));
 
+      // Update leading bidder
+      const bidderData = {
+        name: `${userProfile?.first_name || ""} ${
+          userProfile?.last_name || ""
+        }`,
+        email: userProfile?.email || user.email,
+        amount: bidAmountNum,
+        bidder_id: user.id,
+      };
+      setLeadingBidder(bidderData);
+      await updateLeadingBidder(bidderData);
+
       setBidAmount("");
       toast.success("Bid placed successfully!");
     } catch (error) {
@@ -610,31 +611,70 @@ const AuctionDetails = () => {
   // Delete auction
   const deleteAuction = async () => {
     try {
+      // Check if user is logged in
+      if (!user) {
+        toast.error("Please log in to delete the auction");
+        return;
+      }
+
+      // Check if user is the auction creator
+      if (user.id !== auction.seller_id) {
+        toast.error("Only the auction creator can delete this auction");
+        return;
+      }
+
+      // Delete associated bids
+      const { error: bidsError } = await supabase
+        .from("bids")
+        .delete()
+        .eq("auction_id", id);
+
+      if (bidsError) {
+        console.error("Error deleting bids:", bidsError);
+        throw new Error(`Failed to delete bids: ${bidsError.message}`);
+      }
+
+      // Delete leading bidder record
+      const { error: leadingBidderError } = await supabase
+        .from("leading_bidders")
+        .delete()
+        .eq("auction_id", id);
+
+      if (leadingBidderError) {
+        console.error("Error deleting leading bidder:", leadingBidderError);
+        // Log error but continue with deletion
+      }
+
+      // Delete auction image from storage if exists
       if (auction?.image_url) {
         const imagePath = auction.image_url.split("/").pop();
         const { error: storageError } = await supabase.storage
           .from("auction-images")
           .remove([imagePath]);
-        if (storageError) throw storageError;
+
+        if (storageError) {
+          console.error("Error deleting image:", storageError);
+          // Log error but continue with deletion
+        }
       }
 
-      const { error: bidsError } = await supabase
-        .from("bids")
-        .delete()
-        .eq("auction_id", id);
-      if (bidsError) throw bidsError;
-
+      // Delete the auction
       const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
-        .eq("id", id);
-      if (auctionError) throw auctionError;
+        .eq("id", id)
+        .eq("seller_id", user.id);
 
-      toast.success("Auction has been deleted");
-      navigate("/dashboard");
+      if (auctionError) {
+        console.error("Error deleting auction:", auctionError);
+        throw new Error(`Failed to delete auction: ${auctionError.message}`);
+      }
+
+      // The real-time subscription will handle navigation to dashboard
+      toast.success("Auction deleted successfully");
     } catch (error) {
       console.error("Error deleting auction:", error);
-      toast.error("Failed to delete auction: " + error.message);
+      toast.error(error.message || "Failed to delete auction");
     }
   };
 
@@ -650,20 +690,6 @@ const AuctionDetails = () => {
     };
     cleanupEndedAuctions();
   }, []);
-
-  // Add share functionality
-  const handleShare = () => {
-    const currentUrl = window.location.href;
-    navigator.clipboard
-      .writeText(currentUrl)
-      .then(() => {
-        toast.success("Link copied to clipboard!");
-      })
-      .catch((err) => {
-        console.error("Failed to copy link:", err);
-        toast.error("Failed to copy link");
-      });
-  };
 
   if (loading) {
     return (
@@ -746,12 +772,11 @@ const AuctionDetails = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleShare}
-              >
+              <Button variant="outline" size="sm" className="gap-2">
+                <Heart className="h-4 w-4" />
+                <span className="hidden sm:inline">Save</span>
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2">
                 <Share2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Share</span>
               </Button>
@@ -1021,19 +1046,11 @@ const AuctionDetails = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {highestBidder ? (
+                {leadingBidder ? (
                   <div className="flex items-center gap-3 p-3 rounded-lg border">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-full bg-muted overflow-hidden">
-                        {highestBidder.profiles?.avatar_url ? (
-                          <img
-                            src={highestBidder.profiles.avatar_url}
-                            alt={`${highestBidder.profiles.first_name} ${highestBidder.profiles.last_name}`}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-full h-full p-2 text-muted-foreground" />
-                        )}
+                        <User className="w-full h-full p-2 text-muted-foreground" />
                       </div>
                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                         <Crown className="h-3 w-3 text-primary-foreground" />
@@ -1042,13 +1059,11 @@ const AuctionDetails = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold truncate">
-                          {highestBidder.bidder_id === user?.id
+                          {leadingBidder.bidder_id === user?.id
                             ? "You"
-                            : `${highestBidder.profiles?.first_name || ""} ${
-                                highestBidder.profiles?.last_name || ""
-                              }`}
+                            : leadingBidder.name}
                         </p>
-                        {highestBidder.bidder_id === user?.id && (
+                        {leadingBidder.bidder_id === user?.id && (
                           <Badge
                             variant="outline"
                             className="text-xs px-1.5 py-0.5 text-blue-600 border-blue-200"
@@ -1059,7 +1074,7 @@ const AuctionDetails = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="text-lg font-bold">
-                          ₹{highestBidder.amount.toLocaleString()}
+                          ₹{leadingBidder.amount.toLocaleString()}
                         </p>
                         <Badge variant="secondary" className="text-xs">
                           Leading
@@ -1201,7 +1216,7 @@ const AuctionDetails = () => {
         </div>
       </div>
 
-      {/* Add this section where you want to display the leading bidder */}
+      {/* Display leading bidder details */}
       {leadingBidder && (
         <Card className="mt-4">
           <CardHeader>
